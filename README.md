@@ -44,6 +44,19 @@
 > belong to their respective owners; this project is not an official
 > Astronomer product.
 
+## Why space and rockets?
+
+Because this hackathon is organized by
+[Astronomer](https://www.astronomer.io/), I wanted the project to carry an
+unmistakable Astronomer flavour. Space, rockets, missions, flight directors,
+and orbital telemetry provide a natural visual language for showing what
+Airflow does: workflows launch, move through coordinated stages, report live
+state, request human guidance, and eventually land successfully or require
+recovery. The theme is more than decoration—it makes orchestration status
+immediately visible while celebrating the community behind the
+[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/)
+hackathon.
+
 ## What is this project?
 
 Astro Mission Control is an open-source demonstration of Airflow as both a
