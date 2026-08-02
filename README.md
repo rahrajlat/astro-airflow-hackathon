@@ -1,189 +1,205 @@
-# Python control for the Keyestudio KS4036
+<div align="center">
 
-For the complete command reference, HTTP bridge setup, and troubleshooting,
-see [USB_CONTROLLER_README.md](USB_CONTROLLER_README.md).
+<img src="airflow_docker/widgets/space-mission-control/public/rocket-shuttle-cartoon-fire-v2.png" alt="Astro Mission Control rocket" width="220" />
 
-This first version controls both RGB headlights on the KS4036 smart car from
-Python over the micro:bit's USB serial connection.
+# Astro Mission Control
 
-## 1. Put the firmware on the micro:bit
+### Airflow can orchestrate more than data pipelines—it can orchestrate hardware too.
 
-1. Remove the micro:bit from the car, or leave the car's power switch **off**
-   while flashing.
-2. Open the [micro:bit Python Editor](https://python.microbit.org/).
-3. Replace the editor contents with `main.py` from this repository.
-4. Connect the micro:bit by USB and choose **Send to micro:bit**.
-5. Put the micro:bit back in the car and turn the car's power switch on.
-   Keep USB connected to the computer.
+**An Astronomer-inspired space operations platform that monitors DAGs as rockets and uses Airflow to command a physical planetary rover—from launch and orbital transit to sensing, human decisions, recovery, or impact.**
 
-The micro:bit display shows `N` when the headlights are off and `Y` when they
-are on.
+<br />
 
-If a 128x64 SSD1306 I2C OLED is connected to `GND`, `3V`, `SCL`, and `SDA`,
-the firmware detects it at address `0x3C` or `0x3D` and shows **HELLO** at
-startup. Upload `main.py` to the micro:bit. The OLED shares
-the I2C bus with the car controller, whose separate address is `0x30`.
+<img src="media/mission-lifecycle.gif" alt="Animated Airflow DAG mission lifecycle: launch, orbital transit, successful landing, and payload recovery" width="960" />
 
-The car's controller remembers the last headlight state across a micro:bit
-serial reset. The lights therefore remain on until `lights-off` is sent or the
-car's power is removed.
+<sub>One DAG. One flight path. Launch → orbital transit → successful landing → payload recovered.</sub>
 
-## 2. Install the computer-side dependency
+<br />
 
-```bash
-python3 -m pip install -r requirements.txt
-```
+<img src="media/planet-exploration-rover.gif" alt="Animated Planet Exploration Rover Airflow DAG: systems check, exploration, ultrasonic sensing, camera capture, Gemma analysis, HITL decision, safe action, and XCom-guided return to base" width="960" />
 
-## 3. Control the headlights
+<sub>Airflow orchestrates the mission from physical sensing to a safe, human-authorized return.</sub>
 
-Run one command:
+<br />
 
-```bash
-python3 usb_controller.py lights-on
-python3 usb_controller.py lights-off
-```
+[![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.1%2B-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0B1020)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_AI-111111?logo=ollama&logoColor=white)](https://ollama.com/)
+[![micro:bit](https://img.shields.io/badge/micro%3Abit-Physical_Rover-00ED00?logo=microbit&logoColor=white)](https://microbit.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-D22128?logo=apache&logoColor=white)](LICENSE)
 
-Or enter interactive mode:
+[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
 
-```bash
-python3 usb_controller.py
-```
+</div>
 
-Move forward five short steps and stop:
+---
 
-```bash
-python3 usb_controller.py forward 5
-python3 usb_controller.py backward 5
-```
+> [!NOTE]
+> Astro Mission Control is an independent open-source project created for
+> Astronomer's **Beyond the DAG 2026** hackathon. “Astronomer” and related marks
+> belong to their respective owners; this project is not an official
+> Astronomer product.
 
-The car uses ordinary DC motors, so a "step" means a 250 ms movement pulse
-followed by a 100 ms pause. Between 1 and 20 steps may be requested.
+## What is this project?
 
-Give the car one very short forward nudge:
+Astro Mission Control is an open-source demonstration of Airflow as both a
+workflow observability platform and a physical mission orchestrator. The
+project has two connected parts.
 
-```bash
-python3 usb_controller.py nudge
-```
+### 1. Space Mission Control — an Airflow UI plugin
 
-Multiple nudges can be requested with `nudge 3`. Each nudge is a 100 ms motor
-pulse followed by an immediate stop.
+The first part is an [Apache Airflow 3](https://airflow.apache.org/docs/apache-airflow/stable/index.html)
+plugin that reimagines DAG monitoring as a space operations center. Each DAG is
+represented as a rocket, and its real Airflow state becomes a stage of the
+mission:
 
-Play the happy behaviour:
+- Scheduled and queued DAGs prepare for launch.
+- Running DAGs enter orbital transit with live mission telemetry.
+- Successful DAGs land safely and join the recovery fleet.
+- Failed DAGs appear in the Impact Zone for investigation and crash replay.
+- Paused DAGs enter Cryogenic Hold.
+- Pending HITL tasks wait at the Flight Director's Console for human input.
 
-```bash
-python3 usb_controller.py happy
-```
+The plugin combines an Airflow `react_app` with a FastAPI telemetry service to
+provide a command overview, animated state views, task constellations, failure
+replay, resource telemetry, a Rocket Test Bench, and a rotating five-inch
+mission display. It preserves native links to DAGs, runs, tasks, and logs while
+giving everyday Airflow operations an Astronomer-flavoured mission language.
 
-The car shows a smile, wiggles left and right three times, alternates its RGB
-headlights, then stops with both headlights yellow.
+**Airflow concepts used technically:**
 
-Play the sad behaviour:
+- **`AirflowPlugin`** registers the complete extension with Airflow's plugin
+  manager.
+- **`react_apps`** mounts the React and TypeScript Mission Control interface as
+  a native top-level page in the Airflow UI.
+- **`fastapi_apps`** mounts a plugin-owned FastAPI application under
+  `/mission-control-api` for mission telemetry, DAG details, host resources,
+  static assets, and Rocket Test Bench requests.
+- **Airflow metadata models**—`DagModel`, `DagRun`, and `TaskInstance`—provide
+  real DAG configuration, latest-run state, timing, and task-instance data.
+- **Airflow HITL metadata** identifies unresolved human decisions and maps them
+  to the Flight Director's Console.
+- **DAG tags** select a stable rocket class such as `rocket:heavy`,
+  `rocket:shuttle`, or `rocket:courier`, and power fleet filtering.
+- **Task dependencies and task-instance state** create the task-constellation
+  graph, progress display, mission timing, and animated failure replay.
+- **Native Airflow deep links** take operators from a rocket directly to its
+  DAG, current run, task instance, and logs.
+- **The Airflow CLI** powers Rocket Test Bench with `airflow tasks test`,
+  including logical dates and optional task parameters.
+- **Live polling** keeps the plugin synchronized with changing Airflow state
+  without introducing a separate monitoring database.
 
-```bash
-python3 usb_controller.py sad
-```
+#### Rocket Test Bench
 
-The car shows a sad face, slowly pulses its red headlights, makes two small
-backward shuffles, gently shakes left and right, then stops with dim red
-headlights.
+Space Mission Control also turns Airflow's task-test capability into a visual
+rocket-testing station. An operator selects a DAG, task, and logical date in
+the plugin, optionally supplies a JSON parameters object, and ignites an
+isolated task test from the command deck.
 
-Other emotions:
-
-```bash
-python3 usb_controller.py working
-python3 usb_controller.py nervous
-python3 usb_controller.py angry
-python3 usb_controller.py sleepy
-python3 usb_controller.py neutral
-python3 usb_controller.py celebrate
-python3 usb_controller.py recovered
-python3 usb_controller.py airflow
-```
-
-- `working` — calm blue breathing lights; no movement
-- `nervous` — confused face, alternating yellow lights, and a quick jitter
-- `angry` — angry face, flashing red lights, and a forceful shake
-- `sleepy` — sleeping face and a slow fade to dim blue; no movement
-- `neutral` — resting face, dim white headlights, and stopped motors
-- `celebrate` — colourful victory dance for a complete DAG success
-- `recovered` — green lights and a confident move after recovery
-- `airflow` — rotating 5×5 pinwheel with Airflow-inspired RGB colours
-
-Emotion intensity can be set from 1 (subtle) to 5 (dramatic):
+The station executes the equivalent Airflow command:
 
 ```bash
-python3 usb_controller.py happy 1
-python3 usb_controller.py angry 5
-python3 usb_controller.py airflow 4 --duration 10
+airflow tasks test <DAG_ID> <TASK_ID> <LOGICAL_DATE> \
+  --task-params '{"key":"value"}'
 ```
 
-Any action can be given a duration in seconds:
+The plugin's FastAPI endpoint validates the request and runs the command in the
+Airflow API-server environment. Bench runs are serialized to prevent unbounded
+parallel subprocesses and are limited to five minutes. The station captures
+the exact command, combined task logs, execution duration, exit code, and
+truncation status, then presents the result as a clear **PASS** or **FAIL**
+engine diagnostic. Because it uses `airflow tasks test`, the task can be tested
+without creating a normal scheduled task instance or DagRun.
 
-```bash
-python3 usb_controller.py happy 3 --duration 10
-python3 usb_controller.py lights-on --duration 5
-python3 usb_controller.py forward --duration 2.5
-```
+A secondary Raspberry Pi with a five-inch display acts as the controller's
+dedicated cockpit screen. It opens the plugin's small-screen view in fullscreen
+mode and rotates every ten seconds through high-level running, successful,
+failed, queued, scheduled, paused, and HITL mission status. This gives the
+operator an always-on, glanceable view of the Airflow fleet while the main
+Mission Control interface remains available for detailed investigation. The
+Raspberry Pi is used only as a cockpit display; rover commands, USB sensor data,
+and camera capture continue to pass through the Mac-hosted bridge.
 
-Timed emotions repeat until their deadline. Timed headlights restore their
-previous colour afterward. For timed forward/backward commands, duration
-replaces the step count and the motors stop automatically. Continuous movement
-is limited to 10 seconds; other actions are limited to 60 seconds.
+### 2. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
 
-Run the complete emotion showcase:
+The second part demonstrates that Airflow can orchestrate more than data. The
+`planet_exploration_rover` DAG controls a real wheeled rover and coordinates a
+complete physical exploration mission.
 
-```bash
-python3 usb_controller.py demo
-```
+The rover performs a motor systems check, moves forward one step at a time, and
+sends an ultrasonic distance reading back to Airflow before every movement. At
+the configured five-centimetre safety boundary, it stops and captures the
+obstacle with a computer USB camera. Gemma Vision analyses the photograph and
+sensor telemetry, then an Airflow HITL task asks a human flight director to
+approve the next action. Airflow records outbound movement in XCom so the rover
+can reverse the same number of steps and return to base.
 
-Each emotion has a short tune that plays alongside its lights and movement.
-Sound can be enabled or muted without reflashing:
+**Airflow concepts used technically:**
 
-```bash
-python3 usb_controller.py sound-on
-python3 usb_controller.py sound-off
-```
+- **An Airflow DAG as the mission state machine** defines the ordered physical
+  workflow: systems check → exploration → camera and vision analysis → human
+  decision → selected maneuver → return to base → mission report.
+- **`PythonOperator` tasks** call the Mac-hosted bridge for rover movement,
+  ultrasonic readings, camera capture, Gemma analysis, route recovery, and
+  report generation. Each physical operation remains visible and auditable as
+  an Airflow task instance.
+- **A computer USB camera and OpenCV** capture a forward-facing JPEG only after
+  the ultrasonic sensor reaches the five-centimetre safety boundary. The
+  Mac-hosted FastAPI bridge writes the image to `rover_captures/`.
+- **A read-only Docker volume** exposes that same photograph inside Airflow at
+  `/opt/airflow/rover_captures`, keeping the camera attached to the Mac while
+  allowing the DAG task to access the captured evidence.
+- **Gemma 3 Vision through local Ollama** receives the JPEG together with the
+  ultrasonic distance and outbound-step telemetry. It predicts the broad
+  obstacle type, confidence, supporting evidence, and a recommended safe
+  action.
+- **A Pydantic response schema** validates Gemma's output before it can reach
+  the human decision task. Only the compact structured assessment and image
+  metadata enter XCom; the large image and base64 payload remain outside the
+  Airflow metadata database.
+- **Task dependencies** enforce safety boundaries. The rover cannot explore
+  before its systems check, take a photograph before detecting an obstacle, or
+  move again before the human decision task completes.
+- **XCom return values** carry structured detection samples, image-analysis
+  results, selected-action metadata, and the final mission report between
+  tasks.
+- **A named `outbound_steps` XCom** is updated after every successful forward
+  movement. Return tasks use this durable mission memory to issue the matching
+  number of backward motor pulses.
+- **`HITLBranchOperator`** pauses the mission at the Flight Director's Console
+  and routes execution to turn left, turn right, reverse, return to base, or
+  abort safely.
+- **Jinja-templated HITL content** presents the Gemma object prediction,
+  confidence, visual evidence, recommendation, and camera filename to the
+  human decision-maker inside Airflow.
+- **Branch-aware trigger rules** converge the mutually exclusive movement
+  branches into one shared return-to-base task with
+  `none_failed_min_one_success`.
+- **Airflow task logs and run history** preserve sensor readings, bridge
+  responses, AI output, human decisions, movement counts, and the final mission
+  outcome for replay and investigation.
+- **`max_active_runs=1`** prevents two rover missions from controlling the same
+  physical hardware concurrently.
 
-On a micro:bit V2, sound uses the built-in speaker. On a micro:bit V1, the
-`music` module outputs through pin P0 and requires an external buzzer/speaker.
+The physical build uses:
 
-Emotion routines always stop the motors when they finish and restore the
-headlight colour that was active before the emotion. `neutral` and `demo` are
-intentional resting-state commands and leave their final lighting in place.
+- A [BBC micro:bit board](https://www.keyestudio.com/collections/microbit-board)
+  running the rover's MicroPython firmware
+- A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415)
+  as the mobile rover platform
+- A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
+  for obstacle-distance telemetry
+- A computer USB camera for obstacle photographs and Gemma Vision analysis
+- A USB connection to the Mac bridge that exposes rover movement, sensor, and
+  camera operations to Airflow
 
-The script normally finds the micro:bit automatically. If it cannot, provide
-the serial device explicitly:
+---
 
-```bash
-python3 usb_controller.py --port /dev/cu.usbmodem1102 on
-```
-
-On macOS, `ls /dev/cu.usbmodem*` will show likely device names. Do not keep the
-Python Editor's serial console open while running the controller, because only
-one program can use the serial port at a time.
-
-## Protocol
-
-The computer sends newline-terminated ASCII commands:
-
-- `on` — both RGB headlights turn white
-- `off` — both RGB headlights turn off
-- `lights-on` / `lights-off` — explicit aliases for the two commands above
-- `stop` — clear the retained motor PWM state
-- `forward N` — move forward for `N` short pulses, then stop
-- `backward N` (or `back N`) — reverse for `N` short pulses, then stop
-- `nudge N` — make `N` very short forward movements; the default is one
-- `happy` — smile, wiggle, animate the headlights, and stop safely
-- `sad` — pulse red, shuffle backward, shake left/right, and stop safely
-- `working` — calm blue breathing animation
-- `nervous` — yellow jitter animation
-- `angry` — red forceful shake animation
-- `sleepy` — dim blue resting animation
-- `neutral` — enter the persistent resting state
-- `celebrate` — colourful full-success dance
-- `recovered` — green recovery animation
-- `airflow` — spin an Airflow-inspired pinwheel on the LED matrix
-- `demo` — preview the complete emotion library
-- `sound-on` / `sound-off` — enable or mute emotion tunes
-
-The micro:bit replies with `OK LIGHTS ON`, `OK LIGHTS OFF`, or an error.
+_This is the first README section. Architecture, features, the physical rover
+mission, installation, screenshots, and contributor documentation will be
+added after the project narrative is refined._
