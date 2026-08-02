@@ -1,0 +1,4 @@
+cd /Users/rahul/vscode_projects/astro-airflow-hackathon/airflow_docker
+docker compose build airflow-init
+docker compose up airflow-init
+docker compose up -d

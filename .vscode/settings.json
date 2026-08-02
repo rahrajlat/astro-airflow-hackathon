@@ -1,0 +1,7 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "microbit.flashOnSave": true,
+  "microbit.allowMultipleFiles": true,
+"microbit.autoflash": true,
+"vscode-folder-token-estimator.enabled": false
+}
