@@ -1,12 +1,12 @@
 <div align="center">
 
-<img src="airflow_docker/widgets/space-mission-control/public/rocket-shuttle-cartoon-fire-v2.png" alt="Astro Mission Control rocket" width="220" />
+<img src="media/airflow-drives-a-rover-banner.png" alt="A micro:bit rover stopped centimetres from a concrete wall, its ultrasonic sensor measuring the gap, with a workflow graph drawn overhead as a constellation of blue nodes and one waiting amber node" width="100%" />
 
-# Astro Mission Control
+# Airflow Drives a Rover
 
-### Airflow can orchestrate more than data pipelines—it can orchestrate hardware too.
+### It stops five centimetres from the wall and asks a human what to do next.
 
-**An Astronomer-inspired space operations platform that monitors DAGs as rockets and uses Airflow to command a physical planetary rover—from launch and orbital transit to sensing, human decisions, recovery, or impact.**
+**An Apache Airflow 3 project that orchestrates a physical micro:bit rover—ultrasonic sensing, a local vision model, and an HITL branch where a human authorizes every movement—paired with a Space Mission Control plugin that flies the whole DAG fleet as rockets.**
 
 <br />
 
@@ -27,7 +27,7 @@
 ---
 
 > [!NOTE]
-> Astro Mission Control is an independent open-source project created for
+> Airflow Drives a Rover is an independent open-source project created for
 > Astronomer's **Beyond the DAG 2026** hackathon. “Astronomer” and related marks
 > belong to their respective owners; this project is not an official
 > Astronomer product.
@@ -47,13 +47,93 @@ hackathon.
 
 ## What is this project?
 
-Astro Mission Control is an open-source demonstration of Airflow as both a
-workflow observability platform and a physical mission orchestrator. The
-project has two connected parts.
+Most Airflow tasks can be re-run. This one can't—once a task turns a wheel, the
+only undo is driving back.
 
-### 1. Space Mission Control — an Airflow UI plugin
+That constraint is the point. `planet_exploration_rover` is an Airflow 3 DAG
+that senses before it acts, asks a local vision model what it is looking at, and
+then stops dead until a human authorizes the next physical move. Every reading,
+every AI assessment, and every human decision lands in Airflow's own task logs
+and XComs, so the whole mission is replayable after the fact.
 
-The first part is an [Apache Airflow 3](https://airflow.apache.org/docs/apache-airflow/stable/index.html)
+Two connected parts make that work.
+
+### 1. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
+
+The heart of the project is the `planet_exploration_rover` DAG, which controls a
+real wheeled rover and coordinates a complete physical exploration mission.
+
+The rover performs a motor systems check, moves forward one step at a time, and
+sends an ultrasonic distance reading back to Airflow before every movement. At
+the configured five-centimetre safety boundary, it stops and captures the
+obstacle with a computer USB camera. Gemma Vision analyses the photograph and
+sensor telemetry, then an Airflow HITL task asks a human flight director to
+approve the next action. Airflow records outbound movement in XCom so the rover
+can reverse the same number of steps and return to base.
+
+**Airflow concepts used technically:**
+
+- **An Airflow DAG as the mission state machine** defines the ordered physical
+  workflow: systems check → exploration → camera and vision analysis → human
+  decision → selected maneuver → return to base → mission report.
+- **`PythonOperator` tasks** call the Mac-hosted bridge for rover movement,
+  ultrasonic readings, camera capture, Gemma analysis, route recovery, and
+  report generation. Each physical operation remains visible and auditable as
+  an Airflow task instance.
+- **A computer USB camera and OpenCV** capture a forward-facing JPEG only after
+  the ultrasonic sensor reaches the five-centimetre safety boundary. The
+  Mac-hosted FastAPI bridge writes the image to `rover_captures/`.
+- **A read-only Docker volume** exposes that same photograph inside Airflow at
+  `/opt/airflow/rover_captures`, keeping the camera attached to the Mac while
+  allowing the DAG task to access the captured evidence.
+- **Gemma 3 Vision through local Ollama** receives the JPEG together with the
+  ultrasonic distance and outbound-step telemetry. It predicts the broad
+  obstacle type, confidence, supporting evidence, and a recommended safe
+  action.
+- **A Pydantic response schema** validates Gemma's output before it can reach
+  the human decision task. Only the compact structured assessment and image
+  metadata enter XCom; the large image and base64 payload remain outside the
+  Airflow metadata database.
+- **Task dependencies** enforce safety boundaries. The rover cannot explore
+  before its systems check, take a photograph before detecting an obstacle, or
+  move again before the human decision task completes.
+- **XCom return values** carry structured detection samples, image-analysis
+  results, selected-action metadata, and the final mission report between
+  tasks.
+- **A named `outbound_steps` XCom** is updated after every successful forward
+  movement. Return tasks use this durable mission memory to issue the matching
+  number of backward motor pulses.
+- **`HITLBranchOperator`** pauses the mission at the Flight Director's Console
+  and routes execution to turn left, turn right, reverse, return to base, or
+  abort safely.
+- **Jinja-templated HITL content** presents the Gemma object prediction,
+  confidence, visual evidence, recommendation, and camera filename to the
+  human decision-maker inside Airflow.
+- **Branch-aware trigger rules** converge the mutually exclusive movement
+  branches into one shared return-to-base task with
+  `none_failed_min_one_success`.
+- **Airflow task logs and run history** preserve sensor readings, bridge
+  responses, AI output, human decisions, movement counts, and the final mission
+  outcome for replay and investigation.
+- **`max_active_runs=1`** prevents two rover missions from controlling the same
+  physical hardware concurrently.
+
+The physical build uses:
+
+- A [BBC micro:bit board](https://www.keyestudio.com/collections/microbit-board)
+  running the rover's MicroPython firmware
+- A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415)
+  as the mobile rover platform
+- A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
+  for obstacle-distance telemetry
+- A computer USB camera for obstacle photographs and Gemma Vision analysis
+- A USB connection to the Mac bridge that exposes rover movement, sensor, and
+  camera operations to Airflow
+
+### 2. Space Mission Control — an Airflow UI plugin
+
+The second part is the screen the mission is flown from: an
+[Apache Airflow 3](https://airflow.apache.org/docs/apache-airflow/stable/index.html)
 plugin that reimagines DAG monitoring as a space operations center. Each DAG is
 represented as a rocket, and its real Airflow state becomes a stage of the
 mission:
@@ -125,79 +205,6 @@ operator an always-on, glanceable view of the Airflow fleet while the main
 Mission Control interface remains available for detailed investigation. The
 Raspberry Pi is used only as a cockpit display; rover commands, USB sensor data,
 and camera capture continue to pass through the Mac-hosted bridge.
-
-### 2. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
-
-The second part demonstrates that Airflow can orchestrate more than data. The
-`planet_exploration_rover` DAG controls a real wheeled rover and coordinates a
-complete physical exploration mission.
-
-The rover performs a motor systems check, moves forward one step at a time, and
-sends an ultrasonic distance reading back to Airflow before every movement. At
-the configured five-centimetre safety boundary, it stops and captures the
-obstacle with a computer USB camera. Gemma Vision analyses the photograph and
-sensor telemetry, then an Airflow HITL task asks a human flight director to
-approve the next action. Airflow records outbound movement in XCom so the rover
-can reverse the same number of steps and return to base.
-
-**Airflow concepts used technically:**
-
-- **An Airflow DAG as the mission state machine** defines the ordered physical
-  workflow: systems check → exploration → camera and vision analysis → human
-  decision → selected maneuver → return to base → mission report.
-- **`PythonOperator` tasks** call the Mac-hosted bridge for rover movement,
-  ultrasonic readings, camera capture, Gemma analysis, route recovery, and
-  report generation. Each physical operation remains visible and auditable as
-  an Airflow task instance.
-- **A computer USB camera and OpenCV** capture a forward-facing JPEG only after
-  the ultrasonic sensor reaches the five-centimetre safety boundary. The
-  Mac-hosted FastAPI bridge writes the image to `rover_captures/`.
-- **A read-only Docker volume** exposes that same photograph inside Airflow at
-  `/opt/airflow/rover_captures`, keeping the camera attached to the Mac while
-  allowing the DAG task to access the captured evidence.
-- **Gemma 3 Vision through local Ollama** receives the JPEG together with the
-  ultrasonic distance and outbound-step telemetry. It predicts the broad
-  obstacle type, confidence, supporting evidence, and a recommended safe
-  action.
-- **A Pydantic response schema** validates Gemma's output before it can reach
-  the human decision task. Only the compact structured assessment and image
-  metadata enter XCom; the large image and base64 payload remain outside the
-  Airflow metadata database.
-- **Task dependencies** enforce safety boundaries. The rover cannot explore
-  before its systems check, take a photograph before detecting an obstacle, or
-  move again before the human decision task completes.
-- **XCom return values** carry structured detection samples, image-analysis
-  results, selected-action metadata, and the final mission report between
-  tasks.
-- **A named `outbound_steps` XCom** is updated after every successful forward
-  movement. Return tasks use this durable mission memory to issue the matching
-  number of backward motor pulses.
-- **`HITLBranchOperator`** pauses the mission at the Flight Director's Console
-  and routes execution to turn left, turn right, reverse, return to base, or
-  abort safely.
-- **Jinja-templated HITL content** presents the Gemma object prediction,
-  confidence, visual evidence, recommendation, and camera filename to the
-  human decision-maker inside Airflow.
-- **Branch-aware trigger rules** converge the mutually exclusive movement
-  branches into one shared return-to-base task with
-  `none_failed_min_one_success`.
-- **Airflow task logs and run history** preserve sensor readings, bridge
-  responses, AI output, human decisions, movement counts, and the final mission
-  outcome for replay and investigation.
-- **`max_active_runs=1`** prevents two rover missions from controlling the same
-  physical hardware concurrently.
-
-The physical build uses:
-
-- A [BBC micro:bit board](https://www.keyestudio.com/collections/microbit-board)
-  running the rover's MicroPython firmware
-- A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415)
-  as the mobile rover platform
-- A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
-  for obstacle-distance telemetry
-- A computer USB camera for obstacle photographs and Gemma Vision analysis
-- A USB connection to the Mac bridge that exposes rover movement, sensor, and
-  camera operations to Airflow
 
 ---
 
