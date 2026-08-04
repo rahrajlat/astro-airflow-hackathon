@@ -16,7 +16,6 @@ the bridge through ``ROBOT_BRIDGE_URL`` and read captured JPEGs through the
 read-only ``ROVER_CAPTURE_MOUNT_PATH`` Docker volume.
 """
 
-import base64
 from datetime import datetime
 import json
 import os
@@ -26,8 +25,10 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, Field
+from pydantic_ai import BinaryContent, NativeOutput
 
 from airflow import DAG
+from airflow.providers.common.compat.sdk import task
 from airflow.providers.standard.operators.hitl import HITLBranchOperator
 from airflow.providers.standard.operators.python import PythonOperator
 
@@ -38,13 +39,85 @@ ROBOT_BRIDGE_URL = os.getenv(
 OBSTACLE_DISTANCE_CM = int(os.getenv("ROVER_OBSTACLE_DISTANCE_CM", "5"))
 MAX_FORWARD_STEPS = int(os.getenv("ROVER_MAX_FORWARD_STEPS", "50"))
 TURN_STEPS = int(os.getenv("ROVER_TURN_STEPS", "4"))
-OLLAMA_BASE_URL = os.getenv(
-    "OLLAMA_BASE_URL", "http://host.docker.internal:11434"
-).rstrip("/")
 ROVER_VISION_MODEL = os.getenv("ROVER_VISION_MODEL", "gemma3:4b")
+ROVER_LLM_CONN_ID = os.getenv("ROVER_LLM_CONN_ID", "ollama_local")
+ROVER_VISION_MODEL_ID = (
+    ROVER_VISION_MODEL
+    if ROVER_VISION_MODEL.startswith("openai-")
+    else f"openai-chat:{ROVER_VISION_MODEL}"
+)
 ROVER_CAPTURE_MOUNT_PATH = Path(
     os.getenv("ROVER_CAPTURE_MOUNT_PATH", "/opt/airflow/rover_captures")
 )
+
+DAG_DOC_MD = """
+# 🪐 Planet Exploration Rover
+
+This DAG turns Apache Airflow into mission control for a **physical USB rover**.
+It combines motor commands, ultrasonic telemetry, a forward-facing camera,
+local multimodal AI, and a human flight director in one observable workflow.
+
+## Mission sequence
+
+1. **Systems check** — verify that the Mac-hosted rover bridge, controller,
+   ultrasonic sensor, and camera are available.
+2. **Explore** — advance one motor pulse at a time, checking the obstacle
+   distance before every movement.
+3. **Capture evidence** — stop at the safety boundary and save a JPEG from the
+   forward-facing USB camera.
+4. **Analyse with Common AI** — `predict_detected_object` uses
+   `apache-airflow-providers-common-ai` via **`@task.llm`**. The task sends the
+   camera frame and sensor telemetry to Gemma 3 Vision and returns a validated
+   `ObjectPrediction` containing the likely object, confidence, visual evidence,
+   and a recommended action.
+5. **Human decision** — an Airflow HITL branch presents the AI assessment to the
+   flight director, who selects the rover's physical response.
+6. **Return and report** — the rover retraces its recorded outbound motor pulses
+   and publishes a structured mission report.
+
+## Safety model
+
+- Distance is checked **before** each forward command.
+- Exploration stops at `ROVER_OBSTACLE_DISTANCE_CM` or after
+  `ROVER_MAX_FORWARD_STEPS`.
+- AI provides decision support only; it cannot select or execute the avoidance
+  branch without human approval.
+- Low-confidence or unsafe scenes should result in **return to base** or
+  **abort**.
+- `outbound_steps` is an open-loop motor-pulse count, not wheel odometry or a
+  physical distance measurement.
+
+## Runtime architecture
+
+| Component | Purpose |
+|---|---|
+| Mac FastAPI bridge | Owns the USB rover, ultrasonic sensor, and camera |
+| Airflow Celery worker | Orchestrates tasks and reads captured images |
+| Read-only capture volume | Maps host JPEGs to `/opt/airflow/rover_captures` |
+| Common AI `@task.llm` | Runs the multimodal structured prediction |
+| Ollama + Gemma 3 Vision | Provides local image understanding |
+| `HITLBranchOperator` | Gates every post-detection physical action |
+
+The prediction uses `NativeOutput(ObjectPrediction)`: Gemma receives a native
+JSON schema without tool calling, and the result is validated before entering
+XCom or the HITL screen.
+
+## Configuration
+
+| Environment variable | Default | Meaning |
+|---|---:|---|
+| `ROBOT_BRIDGE_URL` | `http://host.docker.internal:8765` | Mac rover bridge |
+| `ROVER_OBSTACLE_DISTANCE_CM` | `5` | Stop distance in centimetres |
+| `ROVER_MAX_FORWARD_STEPS` | `50` | Maximum outbound motor pulses |
+| `ROVER_TURN_STEPS` | `4` | Pulses used for an avoidance turn |
+| `ROVER_LLM_CONN_ID` | `ollama_local` | Common AI connection ID |
+| `ROVER_VISION_MODEL` | `gemma3:4b` | Local multimodal model |
+| `ROVER_CAPTURE_MOUNT_PATH` | `/opt/airflow/rover_captures` | Worker-side image directory |
+
+> **Before triggering:** start the Mac USB bridge and Ollama, confirm the camera
+> capture directory is mounted into Airflow, and place the rover in a clear,
+> supervised test area.
+"""
 
 
 class ObjectPrediction(BaseModel):
@@ -89,28 +162,8 @@ def bridge_request(path, method="GET", timeout=15):
         raise RuntimeError(f"Rover bridge is offline at {ROBOT_BRIDGE_URL}") from error
 
 
-def analyse_object_photo(**context):
-    """Capture and classify the obstacle using the mounted USB-camera photo.
-
-    The bridge writes a JPEG on the Mac and returns only capture metadata. This
-    task waits briefly for Docker Desktop to expose that file through the
-    read-only Airflow mount, base64-encodes it for Ollama's chat API, and asks
-    ``ROVER_VISION_MODEL`` for an ``ObjectPrediction``. Only the small validated
-    result and capture metadata are returned to XCom; image bytes are excluded.
-
-    Args:
-        **context: Airflow runtime context containing the task instance used to
-            pull the ultrasonic detection result.
-
-    Returns:
-        A prediction dictionary containing the object, confidence, evidence,
-        recommended action, vision model, and camera capture metadata.
-
-    Raises:
-        RuntimeError: If the mounted image is missing or empty, Ollama is
-            unavailable, or Gemma returns output that fails schema validation.
-    """
-    detection = context["ti"].xcom_pull(task_ids="explore_until_object")
+def capture_object_photo(detection):
+    """Capture the obstacle and return metadata for the Common AI task."""
     capture = bridge_request("/camera/capture", method="POST", timeout=30)
     filename = Path(capture["filename"]).name
     image_path = ROVER_CAPTURE_MOUNT_PATH / filename
@@ -124,10 +177,39 @@ def analyse_object_photo(**context):
             f"Captured image is not visible inside Airflow at {image_path}. "
             "Recreate the containers so the rover_captures volume is mounted."
         )
+    if image_path.stat().st_size == 0:
+        raise RuntimeError(f"Captured image is empty: {image_path}")
+    capture["airflow_path"] = str(image_path)
+    return {"camera_capture": capture, "detection": detection}
+
+
+@task.llm(
+    llm_conn_id=ROVER_LLM_CONN_ID,
+    model_id=ROVER_VISION_MODEL_ID,
+    system_prompt=(
+        "You are a cautious planetary-rover navigation analyst. Base every "
+        "claim on the supplied camera image and sensor telemetry."
+    ),
+    # Gemma 3 supports Ollama's native JSON-schema response format, but not
+    # tool calls. NativeOutput prevents Pydantic AI from exposing the schema as
+    # a tool while retaining validated structured output.
+    output_type=NativeOutput(ObjectPrediction),
+    serialize_output=True,
+    agent_params={"retries": 2, "model_settings": {"temperature": 0.1}},
+)
+def predict_detected_object(capture_context):
+    """Classify the captured obstacle with the Common AI ``@task.llm`` decorator.
+
+    The bridge writes a JPEG on the Mac and returns only capture metadata. This
+    decorated task loads it from the read-only mount and returns a multimodal
+    prompt. The Common AI provider performs the model call and validates the
+    structured ``ObjectPrediction`` returned to XCom.
+    """
+    detection = capture_context["detection"]
+    image_path = Path(capture_context["camera_capture"]["airflow_path"])
     image_bytes = image_path.read_bytes()
     if not image_bytes:
         raise RuntimeError(f"Captured image is empty: {image_path}")
-    image_base64 = base64.b64encode(image_bytes).decode("ascii")
     prompt = (
         "You are a cautious planetary-rover navigation analyst. Inspect the attached "
         f"forward-camera image. The ultrasonic sensor reports an obstacle at "
@@ -137,49 +219,7 @@ def analyse_object_photo(**context):
         "return to base, or abort. Prefer return to base when confidence is low or "
         "the route appears unsafe."
     )
-    payload = json.dumps(
-        {
-            "model": ROVER_VISION_MODEL,
-            "stream": False,
-            "format": ObjectPrediction.model_json_schema(),
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt,
-                    "images": [image_base64],
-                }
-            ],
-            "options": {"temperature": 0.1},
-        }
-    ).encode("utf-8")
-    request = Request(
-        f"{OLLAMA_BASE_URL}/api/chat",
-        data=payload,
-        method="POST",
-        headers={"Content-Type": "application/json"},
-    )
-    try:
-        with urlopen(request, timeout=120) as response:
-            ollama_response = json.loads(response.read().decode("utf-8"))
-    except HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(
-            f"Vision model {ROVER_VISION_MODEL} failed ({error.code}): {detail}"
-        ) from error
-    except URLError as error:
-        raise RuntimeError(f"Ollama is offline at {OLLAMA_BASE_URL}") from error
-
-    content = ollama_response.get("message", {}).get("content", "")
-    try:
-        prediction = ObjectPrediction.model_validate_json(content)
-    except Exception as error:
-        raise RuntimeError(f"Vision model returned invalid structured output: {content}") from error
-    result = prediction.model_dump()
-    result["camera_capture"] = capture
-    result["camera_capture"]["airflow_path"] = str(image_path)
-    result["vision_model"] = ROVER_VISION_MODEL
-    print(json.dumps(result, indent=2))
-    return result
+    return [prompt, BinaryContent(data=image_bytes, media_type="image/jpeg")]
 
 
 def move_in_chunks(direction, steps):
@@ -448,11 +488,13 @@ def mission_report(**context):
     detection = context["ti"].xcom_pull(task_ids="explore_until_object")
     return_journey = context["ti"].xcom_pull(task_ids="return_to_base")
     prediction = context["ti"].xcom_pull(task_ids="predict_detected_object")
+    capture = context["ti"].xcom_pull(task_ids="capture_detected_object")
     report = {
         "mission": "planet_exploration_rover",
         "object_distance_cm": detection["distance_cm"],
         "steps_before_detection": detection["forward_steps"],
         "camera_assessment": prediction,
+        "camera_capture": capture["camera_capture"],
         "return_journey": return_journey,
         "status": "flight-director action completed",
     }
@@ -467,6 +509,7 @@ with DAG(
     start_date=datetime(2026, 1, 1),
     catchup=False,
     max_active_runs=1,
+    doc_md=DAG_DOC_MD,
     tags=["astro", "physical-rover", "ultrasonic", "usb-camera", "vision-ai", "rocket:courier"],
 ) as dag:
     check = PythonOperator(task_id="systems_check", python_callable=systems_check)
@@ -475,10 +518,12 @@ with DAG(
         python_callable=explore_until_obstacle,
         execution_timeout=None,
     )
-    predict = PythonOperator(
-        task_id="predict_detected_object",
-        python_callable=analyse_object_photo,
+    capture = PythonOperator(
+        task_id="capture_detected_object",
+        python_callable=capture_object_photo,
+        op_kwargs={"detection": explore.output},
     )
+    predict = predict_detected_object(capture.output)
 
     choose_action = HITLBranchOperator(
         task_id="flight_director_decision",
@@ -494,7 +539,7 @@ with DAG(
 
         **AI recommendation:** {{ ti.xcom_pull(task_ids='predict_detected_object')['recommended_action'] }}
 
-        **Camera frame:** {{ ti.xcom_pull(task_ids='predict_detected_object')['camera_capture']['filename'] }}
+        **Camera frame:** {{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }}
 
         The prediction combines a USB-camera image with ultrasonic distance telemetry.
         Select the physical action the rover should execute.
@@ -542,5 +587,5 @@ with DAG(
         trigger_rule="none_failed_min_one_success",
     )
 
-    check >> explore >> predict >> choose_action
+    check >> explore >> capture >> predict >> choose_action
     choose_action >> [turn_left, turn_right, reverse, immediate_return, abort] >> return_base >> report

@@ -23,12 +23,16 @@ CONTROLLER = Path(__file__).with_name("usb_controller.py")
 VENV_PYTHON = Path(__file__).with_name(".venv") / "bin" / "python"
 CONTROLLER_PYTHON = VENV_PYTHON if VENV_PYTHON.exists() else Path(sys.executable)
 CAPTURE_DIR = Path(
-    os.getenv("ROVER_CAPTURE_DIR", str(Path(__file__).with_name("rover_captures")))
-)
+    os.getenv(
+        "ROVER_CAPTURE_DIR",
+        str(Path(__file__).parent.parent / "airflow_docker" / "rover_captures"),
+    )
+).expanduser()
 CAMERA_INDEX = int(os.getenv("USB_CAMERA_INDEX", "0"))
 CAMERA_WIDTH = int(os.getenv("USB_CAMERA_WIDTH", "1280"))
 CAMERA_HEIGHT = int(os.getenv("USB_CAMERA_HEIGHT", "720"))
-app = FastAPI(title="Astro Mission Companion USB rover bridge", version="1.2.0")
+app = FastAPI(title="Astro Mission Companion USB rover bridge",
+              version="1.2.0")
 controller_lock = threading.Lock()
 camera_lock = threading.Lock()
 
@@ -109,11 +113,14 @@ def camera_capture():
         finally:
             camera.release()
     if frame is None:
-        raise HTTPException(status_code=502, detail="USB camera returned no image")
+        raise HTTPException(
+            status_code=502, detail="USB camera returned no image")
 
-    encoded_ok, encoded = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    encoded_ok, encoded = cv2.imencode(
+        ".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
     if not encoded_ok:
-        raise HTTPException(status_code=500, detail="Could not encode camera frame")
+        raise HTTPException(
+            status_code=500, detail="Could not encode camera frame")
     captured_at = datetime.now(timezone.utc)
     filename = f"rover-{captured_at.strftime('%Y%m%dT%H%M%S%fZ')}.jpg"
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
@@ -133,7 +140,8 @@ def camera_latest():
     """Download the most recently captured rover photograph."""
     captures = sorted(CAPTURE_DIR.glob("rover-*.jpg"), reverse=True)
     if not captures:
-        raise HTTPException(status_code=404, detail="No rover photograph captured yet")
+        raise HTTPException(
+            status_code=404, detail="No rover photograph captured yet")
     return FileResponse(captures[0], media_type="image/jpeg", filename=captures[0].name)
 
 
@@ -141,7 +149,8 @@ def camera_latest():
 def happy(duration: float | None = None):
     """Run the happy emote, optionally for a controlled duration."""
     if duration is not None and not 0 < duration <= 30:
-        raise HTTPException(status_code=422, detail="duration must be between 0 and 30")
+        raise HTTPException(
+            status_code=422, detail="duration must be between 0 and 30")
     return run_controller("happy", 3, duration)
 
 
@@ -155,7 +164,8 @@ def nudge():
 def sad(duration: float | None = None):
     """Run the sad emote, optionally for a controlled duration."""
     if duration is not None and not 0 < duration <= 30:
-        raise HTTPException(status_code=422, detail="duration must be between 0 and 30")
+        raise HTTPException(
+            status_code=422, detail="duration must be between 0 and 30")
     return run_controller("sad", 3, duration)
 
 
@@ -163,9 +173,11 @@ def sad(duration: float | None = None):
 def move(direction: str, steps: int = 1):
     """Move the rover in one direction for 1–20 discrete steps."""
     if direction not in {"forward", "backward", "left", "right"}:
-        raise HTTPException(status_code=404, detail="Unsupported rover direction")
+        raise HTTPException(
+            status_code=404, detail="Unsupported rover direction")
     if not 1 <= steps <= 20:
-        raise HTTPException(status_code=422, detail="steps must be between 1 and 20")
+        raise HTTPException(
+            status_code=422, detail="steps must be between 1 and 20")
     return run_controller(direction, steps)
 
 
@@ -183,7 +195,8 @@ def distance():
             time.sleep(0.35)
     raise HTTPException(
         status_code=502,
-        detail={"message": "Rover returned no distance reading after 3 attempts", "attempts": attempts},
+        detail={"message": "Rover returned no distance reading after 3 attempts",
+                "attempts": attempts},
     )
 
 
@@ -206,7 +219,8 @@ def run_controller(
                 check=False,
             )
     except subprocess.TimeoutExpired as error:
-        raise HTTPException(status_code=504, detail="USB controller timed out") from error
+        raise HTTPException(
+            status_code=504, detail="USB controller timed out") from error
 
     response = CommandResult(
         returncode=result.returncode,

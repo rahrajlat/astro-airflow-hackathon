@@ -10,18 +10,6 @@
 
 <br />
 
-<img src="media/mission-lifecycle.gif" alt="Animated Airflow DAG mission lifecycle: launch, orbital transit, successful landing, and payload recovery" width="960" />
-
-<sub>One DAG. One flight path. Launch → orbital transit → successful landing → payload recovered.</sub>
-
-<br />
-
-<img src="media/planet-exploration-rover.gif" alt="Animated Planet Exploration Rover Airflow DAG: systems check, exploration, ultrasonic sensing, camera capture, Gemma analysis, HITL decision, safe action, and XCom-guided return to base" width="960" />
-
-<sub>Airflow orchestrates the mission from physical sensing to a safe, human-authorized return.</sub>
-
-<br />
-
 [![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.1%2B-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0B1020)](https://react.dev/)

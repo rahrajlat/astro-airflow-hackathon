@@ -82,7 +82,7 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins/
     - ${AIRFLOW_PROJ_DIR:-.}/widgets:/opt/airflow/widgets/
     - ${AIRFLOW_PROJ_DIR:-.}/widgets_ui_dist:/opt/airflow/widgets_ui_dist/
-    - ${ROVER_CAPTURE_DIR:-../rover_captures}:/opt/airflow/rover_captures:ro
+    - ${ROVER_CAPTURE_DIR:-./rover_captures}:/opt/airflow/rover_captures:ro
 
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
