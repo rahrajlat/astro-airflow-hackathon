@@ -1,16 +1,17 @@
 <div align="center">
 
-<img src="media/airflow-drives-a-rover-banner.png" alt="A micro:bit rover stopped centimetres from a concrete wall, its ultrasonic sensor measuring the gap, with a workflow graph drawn overhead as a constellation of blue nodes and one waiting amber node" width="100%" />
-
 # Airflow Drives a Rover
 
-### It stops five centimetres from the wall and asks a human what to do next.
+### It stops five centimetres from the obstacle and asks a human what to do next.
 
-**An Apache Airflow 3 project that orchestrates a physical micro:bit rover—ultrasonic sensing, a local vision model, and an HITL branch where a human authorizes every movement—paired with a Space Mission Control plugin that flies the whole DAG fleet as rockets.**
+**An Apache Airflow 3 DAG that drives a physical micro:bit rover: it senses with
+ultrasound, reads the obstacle with a local vision model, and waits for a human
+to authorize every movement. A companion Space Mission Control plugin flies the
+whole DAG fleet as rockets.**
 
 <br />
 
-[![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.1%2B-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
+[![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.3-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0B1020)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -31,19 +32,6 @@
 > Astronomer's **Beyond the DAG 2026** hackathon. “Astronomer” and related marks
 > belong to their respective owners; this project is not an official
 > Astronomer product.
-
-## Why space and rockets?
-
-Because this hackathon is organized by
-[Astronomer](https://www.astronomer.io/), I wanted the project to carry an
-unmistakable Astronomer flavour. Space, rockets, missions, flight directors,
-and orbital telemetry provide a natural visual language for showing what
-Airflow does: workflows launch, move through coordinated stages, report live
-state, request human guidance, and eventually land successfully or require
-recovery. The theme is more than decoration—it makes orchestration status
-immediately visible while celebrating the community behind the
-[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/)
-hackathon.
 
 ## What is this project?
 
@@ -71,52 +59,45 @@ sensor telemetry, then an Airflow HITL task asks a human flight director to
 approve the next action. Airflow records outbound movement in XCom so the rover
 can reverse the same number of steps and return to base.
 
-**Airflow concepts used technically:**
+**Airflow features used:**
 
-- **An Airflow DAG as the mission state machine** defines the ordered physical
-  workflow: systems check → exploration → camera and vision analysis → human
-  decision → selected maneuver → return to base → mission report.
-- **`PythonOperator` tasks** call the Mac-hosted bridge for rover movement,
-  ultrasonic readings, camera capture, Gemma analysis, route recovery, and
-  report generation. Each physical operation remains visible and auditable as
-  an Airflow task instance.
-- **A computer USB camera and OpenCV** capture a forward-facing JPEG only after
-  the ultrasonic sensor reaches the five-centimetre safety boundary. The
-  Mac-hosted FastAPI bridge writes the image to `rover_captures/`.
-- **A read-only Docker volume** exposes that same photograph inside Airflow at
-  `/opt/airflow/rover_captures`, keeping the camera attached to the Mac while
-  allowing the DAG task to access the captured evidence.
-- **Gemma 3 Vision through local Ollama** receives the JPEG together with the
-  ultrasonic distance and outbound-step telemetry. It predicts the broad
-  obstacle type, confidence, supporting evidence, and a recommended safe
-  action.
-- **A Pydantic response schema** validates Gemma's output before it can reach
-  the human decision task. Only the compact structured assessment and image
-  metadata enter XCom; the large image and base64 payload remain outside the
-  Airflow metadata database.
-- **Task dependencies** enforce safety boundaries. The rover cannot explore
-  before its systems check, take a photograph before detecting an obstacle, or
-  move again before the human decision task completes.
-- **XCom return values** carry structured detection samples, image-analysis
-  results, selected-action metadata, and the final mission report between
-  tasks.
-- **A named `outbound_steps` XCom** is updated after every successful forward
-  movement. Return tasks use this durable mission memory to issue the matching
-  number of backward motor pulses.
+- **`@task.llm` from `apache-airflow-providers-common-ai`** runs the multimodal
+  assessment. The task sends the camera frame and sensor telemetry to a local
+  Gemma 3 vision model and returns a Pydantic-validated `ObjectPrediction`
+  through `NativeOutput`, so malformed model output fails the task instead of
+  reaching the human. Only the compact assessment enters XCom—the JPEG and its
+  base64 payload never touch the metadata database.
 - **`HITLBranchOperator`** pauses the mission at the Flight Director's Console
   and routes execution to turn left, turn right, reverse, return to base, or
-  abort safely.
-- **Jinja-templated HITL content** presents the Gemma object prediction,
-  confidence, visual evidence, recommendation, and camera filename to the
-  human decision-maker inside Airflow.
+  abort. The model recommends; it cannot select the branch.
+- **Jinja-templated HITL content** renders the object prediction, confidence,
+  visual evidence, recommendation, and camera filename into the decision screen
+  the human actually reads.
+- **A named `outbound_steps` XCom**, rewritten after every successful forward
+  movement, is the rover's durable mission memory. Return tasks read it to issue
+  the matching number of backward motor pulses, so a mid-mission sensor failure
+  still leaves a correct return distance recorded.
 - **Branch-aware trigger rules** converge the mutually exclusive movement
   branches into one shared return-to-base task with
-  `none_failed_min_one_success`.
-- **Airflow task logs and run history** preserve sensor readings, bridge
-  responses, AI output, human decisions, movement counts, and the final mission
-  outcome for replay and investigation.
-- **`max_active_runs=1`** prevents two rover missions from controlling the same
-  physical hardware concurrently.
+  `none_failed_min_one_success`, which then computes the inverse of whichever
+  maneuver the human chose.
+- **XComArg wiring** passes data by reference between a classic operator and a
+  decorated task—`op_kwargs={"detection": explore.output}` feeding
+  `predict_detected_object(capture.output)`—without a manual `xcom_pull`.
+- **Task dependencies as safety interlocks.** The rover cannot explore before
+  its systems check, photograph before detecting an obstacle, or move again
+  before the human decision resolves. The graph is the safety model.
+- **`max_active_runs=1`** prevents two missions from driving the same physical
+  hardware at once.
+- **`doc_md`** publishes the mission sequence, safety model, runtime
+  architecture, and configuration table directly into the Airflow UI, so the
+  DAG documents itself where an operator is standing.
+- **Task logs and run history** preserve every sensor reading, bridge response,
+  model assessment, human decision, and movement count—a replayable audit trail
+  for an irreversible physical action.
+- **A read-only Docker volume** exposes the captured photograph inside Airflow
+  at `/opt/airflow/rover_captures`, keeping the camera on the Mac while the DAG
+  task reads the evidence.
 
 The physical build uses:
 
@@ -126,7 +107,10 @@ The physical build uses:
   as the mobile rover platform
 - A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
   for obstacle-distance telemetry
-- A computer USB camera for obstacle photographs and Gemma Vision analysis
+- A computer USB camera, read through OpenCV, that captures a forward-facing
+  JPEG only once the ultrasonic sensor reaches the safety boundary
+- Gemma 3 Vision on local Ollama, which keeps every frame and every inference on
+  the same machine as the rover—no image leaves the host
 - A USB connection to the Mac bridge that exposes rover movement, sensor, and
   camera operations to Airflow
 
@@ -151,10 +135,11 @@ replay, resource telemetry, a Rocket Test Bench, and a rotating five-inch
 mission display. It preserves native links to DAGs, runs, tasks, and logs while
 giving everyday Airflow operations an Astronomer-flavoured mission language.
 
-**Airflow concepts used technically:**
+**Airflow features used:**
 
-- **`AirflowPlugin`** registers the complete extension with Airflow's plugin
-  manager.
+- **`AirflowPlugin`** registers the whole extension—React app, FastAPI service,
+  and static assets—through Airflow's plugin manager alone, with no fork and no
+  reverse proxy.
 - **`react_apps`** mounts the React and TypeScript Mission Control interface as
   a native top-level page in the Airflow UI.
 - **`fastapi_apps`** mounts a plugin-owned FastAPI application under
@@ -162,8 +147,9 @@ giving everyday Airflow operations an Astronomer-flavoured mission language.
   static assets, and Rocket Test Bench requests.
 - **Airflow metadata models**—`DagModel`, `DagRun`, and `TaskInstance`—provide
   real DAG configuration, latest-run state, timing, and task-instance data.
-- **Airflow HITL metadata** identifies unresolved human decisions and maps them
-  to the Flight Director's Console.
+- **Airflow HITL metadata** (`HITLDetail` joined to `TaskInstance` on unanswered
+  responses) builds a single cross-DAG queue of every decision currently blocked
+  on a person, which is the Flight Director's Console.
 - **DAG tags** select a stable rocket class such as `rocket:heavy`,
   `rocket:shuttle`, or `rocket:courier`, and power fleet filtering.
 - **Task dependencies and task-instance state** create the task-constellation
@@ -205,6 +191,15 @@ operator an always-on, glanceable view of the Airflow fleet while the main
 Mission Control interface remains available for detailed investigation. The
 Raspberry Pi is used only as a cockpit display; rover commands, USB sensor data,
 and camera capture continue to pass through the Mac-hosted bridge.
+
+## Why space and rockets?
+
+Because this hackathon is run by [Astronomer](https://www.astronomer.io/), the
+plugin borrows space as its visual language. Rockets, mission stages, and a
+flight director's console map cleanly onto what Airflow already does: workflows
+launch, move through coordinated stages, report live state, ask for human
+guidance, and either land or need recovery. The theme is not only decoration—it
+makes orchestration status readable at a glance.
 
 ---
 
