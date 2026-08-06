@@ -11,6 +11,8 @@ __pycache__/
 build/
 develop-eggs/
 dist/
+!airflow_docker/widgets/space-mission-control/dist/
+!airflow_docker/widgets/space-mission-control/dist/**
 downloads/
 eggs/
 .eggs/

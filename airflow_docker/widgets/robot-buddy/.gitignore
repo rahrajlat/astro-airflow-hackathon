@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 .pnpm-store
 dist
+!dist/
+!dist/**
 dist-ssr
 *.local
 
