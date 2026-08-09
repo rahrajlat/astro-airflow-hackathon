@@ -14,7 +14,7 @@ OUTPUT = ROOT / "media" / "dagstronaut-mission-loop.gif"
 
 WIDTH = 900
 HEIGHT = 400
-FRAMES = 72
+FRAMES = 90
 DURATION_MS = 75
 BACKGROUND = (3, 12, 29)
 
@@ -72,8 +72,8 @@ def main() -> None:
 
     stars = ((35, 45), (91, 87), (166, 38), (261, 72), (351, 34),
              (445, 62), (537, 31), (625, 80), (717, 42), (813, 67), (871, 32))
-    stage_x = (120, 340, 560, 780)
-    stage_labels = ("MOVE", "DETECT", "AI REVIEW", "HUMAN APPROVAL")
+    stage_x = (80, 265, 450, 635, 820)
+    stage_labels = ("MOVE", "DETECT", "AI REVIEW", "HUMAN APPROVAL", "RETURN TO BASE")
     output_frames: list[Image.Image] = []
 
     for frame_index in range(FRAMES):
@@ -88,7 +88,7 @@ def main() -> None:
         # Mission timeline remains visible throughout the loop.
         timeline_y = 352
         draw.line((stage_x[0], timeline_y, stage_x[-1], timeline_y), fill=(26, 91, 124), width=4)
-        active_stage = min(3, frame_index // 18)
+        active_stage = min(4, frame_index // 18)
         for index, (x, label) in enumerate(zip(stage_x, stage_labels)):
             complete = index < active_stage
             active = index == active_stage
@@ -147,7 +147,7 @@ def main() -> None:
             draw.text((732, 174), "REVIEW", font=SMALL, fill=(224, 242, 247))
             centered_text(draw, "AI REVIEWS CAMERA EVIDENCE", 36, TITLE, (130, 234, 242))
 
-        else:
+        elif frame_index < 72:
             rover_x = 370
             rover_y = 278 - mascot_height
             canvas.paste(mascot, (rover_x, rover_y), mascot)
@@ -165,6 +165,24 @@ def main() -> None:
             draw.line((767, 163, 791, 128), fill=(225, 255, 242), width=7)
             draw.text((706, 202), "APPROVED", font=SMALL, fill=(99, 238, 187))
             centered_text(draw, "HUMAN FLIGHT DIRECTOR APPROVES", 36, TITLE, (255, 202, 103))
+
+        else:
+            local = (frame_index - 72) / 17
+            eased = local * local * (3 - 2 * local)
+            rover_x = round(370 - 330 * eased)
+            bob = round(3 * math.sin(local * math.tau * 2))
+            rover_y = 278 - mascot_height + bob
+            canvas.paste(mascot, (rover_x, rover_y), mascot)
+            # The rover retraces its recorded motor pulses in reverse.
+            for streak in range(3):
+                streak_y = 222 + streak * 12
+                draw.line((rover_x + mascot_width + 12, streak_y,
+                           rover_x + mascot_width + 46 - streak * 8, streak_y),
+                          fill=(17, 93, 125), width=2)
+            draw.line((rover_x - 18, 198, rover_x - 34, 198), fill=(69, 235, 204), width=4)
+            draw.line((rover_x - 34, 198, rover_x - 25, 189), fill=(69, 235, 204), width=4)
+            draw.line((rover_x - 34, 198, rover_x - 25, 207), fill=(69, 235, 204), width=4)
+            centered_text(draw, "RETURNING TO BASE", 38, TITLE, (99, 238, 187))
 
         output_frames.append(canvas.quantize(colors=112, method=Image.Quantize.MEDIANCUT))
 
