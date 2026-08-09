@@ -35,6 +35,15 @@ whole DAG fleet as rockets.**
 > belong to their respective owners; this project is not an official
 > Astronomer product.
 
+## Why space,rockets and rovers?
+
+Because this hackathon is run by [Astronomer](https://www.astronomer.io/), the
+plugin borrows space as its visual language. Rockets, mission stages, and a
+flight director's console map cleanly onto what Airflow already does: workflows
+launch, move through coordinated stages, report live state, ask for human
+guidance, and either land or need recovery. The theme is not only decoration—it
+makes orchestration status readable at a glance.
+
 ## What is this project?
 
 Most Airflow tasks can be re-run. This one can't—once a task turns a wheel, the
