@@ -1,8 +1,22 @@
 <div align="center">
 
-# Airflow Drives a Rover
+<hr />
 
-### It stops five centimetres from the obstacle and asks a human what to do next.
+<h1><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> DAGstronaut</h1>
+
+<blockquote><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></blockquote>
+
+[![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.3-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0B1020)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local_AI-111111?logo=ollama&logoColor=white)](https://ollama.com/)
+[![micro:bit](https://img.shields.io/badge/micro%3Abit-Physical_Rover-00ED00?logo=microbit&logoColor=white)](https://microbit.org/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-D22128?logoColor=white)](LICENSE)
+
+<hr />
 
 **An Apache Airflow 3 DAG that drives a physical micro:bit rover: it senses with
 ultrasound, reads the obstacle with a local vision model, and waits for a human
@@ -28,7 +42,7 @@ whole DAG fleet as rockets.**
 ---
 
 > [!NOTE]
-> Airflow Drives a Rover is an independent open-source project created for
+> DAGstronaut is an independent open-source project created for
 > Astronomer's **Beyond the DAG 2026** hackathon. “Astronomer” and related marks
 > belong to their respective owners; this project is not an official
 > Astronomer product.
@@ -45,6 +59,10 @@ every AI assessment, and every human decision lands in Airflow's own task logs
 and XComs, so the whole mission is replayable after the fact.
 
 Two connected parts make that work.
+
+> **The rover is the spacecraft. The DAG is its flight plan. The Airflow plugin
+> is Mission Control—tracking every stage, presenting the AI assessment, and
+> placing the final maneuver in the hands of a human flight director.**
 
 ### 1. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
 
