@@ -1,7 +1,9 @@
 <div align="center">
 
 
-<h1><img src="media/dagstronaut-logo-animated.gif" alt="Animated DAGstronaut logo" width="72" align="center" /> DAGstronaut</h1>
+<h1><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> DAGstronaut</h1>
+
+<img src="media/dagstronaut-mission-loop.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, and human approval" width="900" />
 
 <p><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></p>
 
