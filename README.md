@@ -2,8 +2,8 @@
 
 
 <div><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="100" align="center" /> <big><big><big><strong>DAGstronaut</strong></big></big></big></div>
-
-<img src="media/dagstronaut-mission-loop-v3.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, human approval, and return to base" width="900" />
+<br>
+<br>
 
 <p><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></p>
 
@@ -46,24 +46,34 @@ launch, move through coordinated stages, report live state, ask for human
 guidance, and either land or need recovery. The theme is not only decoration—it
 makes orchestration status readable at a glance.
 
-## What is this project?
+## What is DAGstronaut?
 
-Most Airflow tasks can be re-run. This one can't—once a task turns a wheel, the
-only undo is driving back.
+DAGstronaut is a physical rover mission orchestrated end to end by Apache
+Airflow 3. Instead of moving data between systems, its DAG moves a real machine
+through the world—carefully, visibly, and with a human in command.
 
-That constraint is the point. `planet_exploration_rover` is an Airflow 3 DAG
-that senses before it acts, asks a local vision model what it is looking at, and
-then stops dead until a human authorizes the next physical move. Every reading,
-every AI assessment, and every human decision lands in Airflow's own task logs
-and XComs, so the whole mission is replayable after the fact.
+The rover advances one motor pulse at a time and checks its ultrasonic sensor
+before every move. When it reaches an obstacle, it stops, captures a photograph,
+and sends the image and distance telemetry to a local vision model. The model
+explains what it sees and recommends a response, but it cannot move the rover.
+An Airflow HITL task holds the mission until a human flight director reviews the
+evidence and chooses what happens next.
 
-Two connected parts make that work.
+Airflow is more than the scheduler behind the demo. The DAG defines the safety
+sequence, XCom stores the rover's outbound path, task logs preserve the mission
+record, and branch dependencies ensure that no physical action can bypass human
+approval. After the chosen maneuver, the rover reverses its recorded steps and
+returns to base.
 
-> **The rover is the spacecraft. The DAG is its flight plan. The Airflow plugin
-> is Mission Control—tracking every stage, presenting the AI assessment, and
-> placing the final maneuver in the hands of a human flight director.**
+A companion Airflow plugin turns that workflow into Space Mission Control,
+showing the live mission, AI evidence, pending human decisions, and final return
+as one coherent flight.
+
+> **The rover explores. AI advises. A human commands. Airflow brings it home.**
 
 ### 1. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
+
+<img src="media/dagstronaut-mission-loop-v3.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, human approval, and return to base" width="900" />
 
 The heart of the project is the `planet_exploration_rover` DAG, which controls a
 real wheeled rover and coordinates a complete physical exploration mission.
@@ -211,14 +221,22 @@ Mission Control interface remains available for detailed investigation. The
 Raspberry Pi is used only as a cockpit display; rover commands, USB sensor data,
 and camera capture continue to pass through the Mac-hosted bridge.
 
-## Why space and rockets?
+## Why space, rockets, and rovers?
 
-Because this hackathon is run by [Astronomer](https://www.astronomer.io/), the
-plugin borrows space as its visual language. Rockets, mission stages, and a
-flight director's console map cleanly onto what Airflow already does: workflows
-launch, move through coordinated stages, report live state, ask for human
-guidance, and either land or need recovery. The theme is not only decoration—it
-makes orchestration status readable at a glance.
+Spaceflight is orchestration under pressure. A mission advances through
+dependent stages, streams telemetry, pauses when the flight director must make
+a decision, and ends in either a safe landing or a carefully managed recovery.
+That is already how Airflow thinks about work.
+
+The [Astronomer](https://www.astronomer.io/) connection makes space a natural
+visual language, but the theme earns its place by making workflow state easier
+to understand. Rockets turn DAG runs into visible missions. Mission Control
+turns task state and HITL requests into operational signals. The rover gives
+those signals a physical consequence: when a task succeeds, something in the
+real world moves.
+
+Together, the spacecraft, flight plan, and command center turn an abstract DAG
+into a mission anyone can follow at a glance.
 
 ---
 
