@@ -1,7 +1,7 @@
 <div align="center">
 
 
-<div><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> <strong><font size="7">DAGstronaut</font></strong></div>
+<div><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="100" align="center" /> <big><big><big><strong>DAGstronaut</strong></big></big></big></div>
 
 <img src="media/dagstronaut-mission-loop-v3.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, human approval, and return to base" width="900" />
 
