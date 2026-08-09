@@ -102,7 +102,7 @@ can reverse the same number of steps and return to base.
 The physical build uses:
 
 - A [BBC micro:bit board](https://www.keyestudio.com/collections/microbit-board)
-  running the rover's MicroPython firmware
+  running the rover's [MicroPython firmware](microbit_firmware/README.md)
 - A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415)
   as the mobile rover platform
 - A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
@@ -111,8 +111,10 @@ The physical build uses:
   JPEG only once the ultrasonic sensor reaches the safety boundary
 - Gemma 3 Vision on local Ollama, which keeps every frame and every inference on
   the same machine as the rover—no image leaves the host
-- A USB connection to the Mac bridge that exposes rover movement, sensor, and
-  camera operations to Airflow
+- A USB connection to the [Mac USB bridge](mac_os_api/usb_bridge.py) that exposes
+  rover movement, sensor, and camera operations to Airflow; see the
+  [USB controller setup guide](mac_os_api/USB_CONTROLLER_README.md) for setup
+  and usage
 
 ### 2. Space Mission Control — an Airflow UI plugin
 

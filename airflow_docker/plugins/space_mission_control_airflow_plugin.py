@@ -19,11 +19,15 @@ from airflow.plugins_manager import AirflowPlugin
 from airflow.utils.session import create_session
 from fastapi import FastAPI
 from fastapi import HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 
 MISSION_CONTROL_DIST = Path("/opt/airflow/widgets/space-mission-control/dist")
+ROVER_CAPTURE_DIR = Path(
+    os.getenv("ROVER_CAPTURE_MOUNT_PATH", "/opt/airflow/rover_captures")
+)
 ROCKET_TYPES = ("heavy", "shuttle", "courier")
 mimetypes.add_type("application/javascript", ".cjs")
 mission_control_app = FastAPI(title="Space Mission Control API")
@@ -43,6 +47,29 @@ class TaskTestRequest(BaseModel):
 
 def _iso(value):
     return value.isoformat() if value else None
+
+
+@mission_control_app.get("/rover-captures/{filename}")
+def rover_capture_image(filename: str):
+    """Serve one immutable rover JPEG for the Airflow HITL decision page."""
+    candidate = Path(filename)
+    if (
+        candidate.name != filename
+        or not filename.startswith("rover-")
+        or candidate.suffix.lower() not in {".jpg", ".jpeg"}
+    ):
+        raise HTTPException(status_code=404, detail="Rover capture not found")
+
+    capture_root = ROVER_CAPTURE_DIR.resolve()
+    image_path = (capture_root / filename).resolve()
+    if image_path.parent != capture_root or not image_path.is_file():
+        raise HTTPException(status_code=404, detail="Rover capture not found")
+
+    return FileResponse(
+        image_path,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "private, max-age=3600"},
+    )
 
 
 def _read_cpu_times():

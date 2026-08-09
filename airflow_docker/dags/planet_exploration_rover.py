@@ -20,6 +20,7 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
+from textwrap import dedent
 import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -128,7 +129,10 @@ class ObjectPrediction(BaseModel):
     """
 
     predicted_object: str = Field(
-        description="Likely terrain feature, such as wall, rock, or large obstruction"
+        description=(
+            "Most likely visible obstacle or scene object, such as toy car, small "
+            "vehicle, box, cable, electronics, furniture, wall, or unknown obstruction"
+        )
     )
     confidence_percent: int = Field(ge=0, le=100)
     evidence: str = Field(description="Short explanation grounded in the image and readings")
@@ -211,11 +215,16 @@ def predict_detected_object(capture_context):
     if not image_bytes:
         raise RuntimeError(f"Captured image is empty: {image_path}")
     prompt = (
-        "You are a cautious planetary-rover navigation analyst. Inspect the attached "
-        f"forward-camera image. The ultrasonic sensor reports an obstacle at "
+        "You are a cautious planetary-rover navigation analyst inspecting an indoor "
+        "demo scene, not real terrain. Focus on the nearest primary obstruction in "
+        "the rover's path, especially the lower-center and foreground area of the "
+        "image. The object may be a toy car, small vehicle, box, cable, electronics, "
+        "furniture, wall, or another tabletop/desk object. Use 'unknown obstruction' "
+        "only when no individual object is visually distinguishable. If the image is "
+        "ambiguous but a broad category is visible, choose that broad category and "
+        f"explain the uncertainty. The ultrasonic sensor reports an obstacle at "
         f"{detection['distance_cm']} cm after {detection['forward_steps']} forward "
-        "steps. Identify only what is visually supportable, acknowledge uncertainty, "
-        "and recommend exactly one action: turn left, turn right, move backward, "
+        "steps. Recommend exactly one action: turn left, turn right, move backward, "
         "return to base, or abort. Prefer return to base when confidence is low or "
         "the route appears unsafe."
     )
@@ -528,22 +537,51 @@ with DAG(
     choose_action = HITLBranchOperator(
         task_id="flight_director_decision",
         subject="Rover obstacle detected — choose avoidance action",
-        body="""
-        ### AI terrain assessment
+        body=dedent(
+            """
+            ## Flight director decision required
 
-        **Prediction:** {{ ti.xcom_pull(task_ids='predict_detected_object')['predicted_object'] }}
+            ### Rover camera observation
 
-        **Confidence:** {{ ti.xcom_pull(task_ids='predict_detected_object')['confidence_percent'] }}%
+            ![Obstacle captured by the rover](/mission-control-api/rover-captures/{{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }})
 
-        **Evidence:** {{ ti.xcom_pull(task_ids='predict_detected_object')['evidence'] }}
+            [Open the full-size rover photograph](/mission-control-api/rover-captures/{{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }})
 
-        **AI recommendation:** {{ ti.xcom_pull(task_ids='predict_detected_object')['recommended_action'] }}
+            ### Mission telemetry
 
-        **Camera frame:** {{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }}
+            | Signal | Reading |
+            |---|---:|
+            | Obstacle distance | **{{ ti.xcom_pull(task_ids='explore_until_object')['distance_cm'] }} cm** |
+            | Safety boundary | {{ params.obstacle_distance_cm }} cm |
+            | Outbound motor pulses | {{ ti.xcom_pull(task_ids='explore_until_object')['forward_steps'] }} |
+            | Valid sensor samples | {{ ti.xcom_pull(task_ids='explore_until_object')['samples'] | selectattr('distance_cm', 'gt', 0) | list | length }} / {{ ti.xcom_pull(task_ids='explore_until_object')['samples'] | length }} |
+            | Vision model | {{ params.vision_model }} |
 
-        The prediction combines a USB-camera image with ultrasonic distance telemetry.
-        Select the physical action the rover should execute.
-        """,
+            ### AI assessment
+
+            | Result | Assessment |
+            |---|---|
+            | Predicted object | **{{ ti.xcom_pull(task_ids='predict_detected_object')['predicted_object'] }}** |
+            | Confidence | **{{ ti.xcom_pull(task_ids='predict_detected_object')['confidence_percent'] }}%** |
+            | AI recommendation | **{{ ti.xcom_pull(task_ids='predict_detected_object')['recommended_action'] }}** |
+
+            > **Visual evidence:** {{ ti.xcom_pull(task_ids='predict_detected_object')['evidence'] }}
+
+            ### Available commands
+
+            | Selection | Physical effect |
+            |---|---|
+            | `turn_left_then_move_five` | Turn left {{ params.turn_steps }} pulses, then advance 5 pulses |
+            | `turn_right_then_move_five` | Turn right {{ params.turn_steps }} pulses, then advance 5 pulses |
+            | `move_backward_five` | Reverse 5 pulses without turning |
+            | `return_to_base_now` | Retrace all {{ ti.xcom_pull(task_ids='explore_until_object')['forward_steps'] }} outbound pulses now |
+            | `abort_and_hold_position` | Make no immediate movement; the return sequence then retraces the outbound route |
+
+            > **Human approval required.** Confirm the camera view and clearance before
+            > authorising movement. The AI assessment is advisory. If the scene is
+            > ambiguous or unsafe, choose **return to base** or **abort**.
+            """
+        ).strip(),
         options=[
             "turn_left_then_move_five",
             "turn_right_then_move_five",
@@ -552,6 +590,11 @@ with DAG(
             "abort_and_hold_position",
         ],
         defaults="abort_and_hold_position",
+        params={
+            "obstacle_distance_cm": OBSTACLE_DISTANCE_CM,
+            "turn_steps": TURN_STEPS,
+            "vision_model": ROVER_VISION_MODEL,
+        },
     )
 
     turn_left = PythonOperator(

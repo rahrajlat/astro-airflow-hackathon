@@ -20,6 +20,73 @@ Airflow DAG or Mission Control UI
         KS4036 rover hardware
 ```
 
+## How the firmware works
+
+`main.py` is a small, synchronous command server. It owns the rover hardware
+for as long as the micro:bit is powered and translates one serial command at a
+time into motor, sensor, light, display, or sound operations.
+
+### 1. Startup leaves the rover safe
+
+The firmware initializes the USB UART at `115200` baud and immediately writes
+zero to all four motor registers. It then scans the I2C bus for an optional OLED,
+draws its idle eyes when one is present, and emits the `READY` and `OLED` status
+lines. The rover does not move during startup.
+
+### 2. The main loop assembles serial commands
+
+The bottom of `main.py` contains the firmware's event loop. It reads the UART
+one byte at a time, accumulating bytes until it receives a carriage return or
+newline. The completed ASCII line is passed to `handle()`. While no command is
+waiting, the loop updates the OLED's idle blink animation.
+
+```text
+USB bytes → newline received → handle(command) → hardware action → OK/ERR reply
+```
+
+Commands execute synchronously: the firmware finishes the current action and
+stops its motors before reading the next command. The Mac controller therefore
+waits for the terminal `OK ...` or `ERR ...` response before considering a
+request complete.
+
+### 3. `handle()` validates and dispatches the request
+
+`handle()` lowercases and tokenizes the line, extracts an optional
+`duration=SECONDS` value, validates counts or intensity, and dispatches to the
+matching function:
+
+| Command family | Firmware functions | Hardware used |
+| --- | --- | --- |
+| Movement | `forward()`, `backward()`, `left()`, `right()` | Motor controller and LED matrix |
+| Sensing | `distance_cm()` | P14 trigger and P15 echo |
+| Expressions | `happy()`, `sad()`, `play()` | Motors, RGB lights, OLED, LEDs, and speaker |
+| Interaction | `nudge()` | Motors, ultrasonic sensor, microphone, displays, lights, and speaker |
+
+Invalid input returns a specific error such as `ERR MOVE 1 TO 20` without
+starting the requested action.
+
+### 4. Motor commands become timed I2C writes
+
+The Keyestudio motor controller is an I2C device at address `0x30` (`48` in the
+code). The helper `reg(register, value)` writes a motor or RGB value to one of
+its registers. Forward and backward movement energize opposite motor channels;
+turning drives the wheels in opposite directions so the rover rotates.
+
+A movement count is implemented as repeated `100 ms` pulses. For example,
+`forward 5` applies forward motor values five times and then calls `stop()`,
+which clears all four motor registers. Forward, backward, nudge, and timed
+expression paths also use `finally` cleanup so their motors are cleared if the
+action exits early; each individual turn pulse explicitly stops after its
+sleep completes.
+
+### 5. Results travel back up the stack
+
+After the hardware function completes, `handle()` creates one response line,
+such as `OK FORWARD 5` or `OK DISTANCE 29`. The UART loop writes it over USB;
+`usb_controller.py` reads that terminal line; and `usb_bridge.py` exposes the
+result to Airflow as an HTTP response. This gives each Airflow movement or
+sensor task a definite completion signal from the physical rover.
+
 ## Supported hardware
 
 - Keyestudio KS4036 micro:bit smart rover
