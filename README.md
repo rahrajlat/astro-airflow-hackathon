@@ -3,7 +3,7 @@
 
 <h1><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> DAGstronaut</h1>
 
-<blockquote><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></blockquote>
+<p><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></p>
 
 [![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.3-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
