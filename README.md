@@ -1,6 +1,5 @@
 <div align="center">
 
-<hr />
 
 <h1><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> DAGstronaut</h1>
 
@@ -14,16 +13,21 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local_AI-111111?logo=ollama&logoColor=white)](https://ollama.com/)
 [![micro:bit](https://img.shields.io/badge/micro%3Abit-Physical_Rover-00ED00?logo=microbit&logoColor=white)](https://microbit.org/)
-[![License](https://img.shields.io/badge/License-Apache_2.0-D22128?logoColor=white)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-D22128?logo=apache&logoColor=white)](LICENSE)
 
-<hr />
+
+[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
+
+
 
 **An Apache Airflow 3 DAG that drives a physical micro:bit rover: it senses with
 ultrasound, reads the obstacle with a local vision model, and waits for a human
 to authorize every movement. A companion Space Mission Control plugin flies the
 whole DAG fleet as rockets.**
 
-[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
+<br />
+
+
 
 </div>
 
