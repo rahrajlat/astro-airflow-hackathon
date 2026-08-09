@@ -1,9 +1,9 @@
 <div align="center">
 
 
-<h1><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> DAGstronaut</h1>
+<div><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="72" align="center" /> <strong><font size="7">DAGstronaut</font></strong></div>
 
-<img src="media/dagstronaut-mission-loop.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, human approval, and return to base" width="900" />
+<img src="media/dagstronaut-mission-loop-v3.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, human approval, and return to base" width="900" />
 
 <p><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></p>
 

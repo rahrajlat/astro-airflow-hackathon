@@ -10,10 +10,11 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "media" / "dagstronaut-mascot-sprite.png"
-OUTPUT = ROOT / "media" / "dagstronaut-mission-loop.gif"
+OUTPUT = ROOT / "media" / "dagstronaut-mission-loop-v3.gif"
 
 WIDTH = 900
 HEIGHT = 400
+OUTPUT_HEIGHT = 360
 FRAMES = 90
 DURATION_MS = 75
 BACKGROUND = (3, 12, 29)
@@ -184,7 +185,8 @@ def main() -> None:
             draw.line((rover_x - 34, 198, rover_x - 25, 207), fill=(69, 235, 204), width=4)
             centered_text(draw, "RETURNING TO BASE", 38, TITLE, (99, 238, 187))
 
-        output_frames.append(canvas.quantize(colors=112, method=Image.Quantize.MEDIANCUT))
+        compact = canvas.resize((WIDTH, OUTPUT_HEIGHT), Image.Resampling.LANCZOS)
+        output_frames.append(compact.quantize(colors=112, method=Image.Quantize.MEDIANCUT))
 
     output_frames[0].save(
         OUTPUT,
