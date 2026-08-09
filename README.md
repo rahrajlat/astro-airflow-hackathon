@@ -29,8 +29,6 @@ whole DAG fleet as rockets.**
 
 </div>
 
----
-
 > [!NOTE]
 > DAGstronaut is an independent open-source project created for
 > Astronomer's **Beyond the DAG 2026** hackathon. “Astronomer” and related marks
