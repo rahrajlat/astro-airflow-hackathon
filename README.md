@@ -2,8 +2,6 @@
 
 
 <div><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="100" align="center" /> <big><big><big><strong>DAGstronaut</strong></big></big></big></div>
-<br>
-<br>
 
 <h2>This DAG doesn't move data.<br />It moves a rover.</h2>
 
