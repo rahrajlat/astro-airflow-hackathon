@@ -1,21 +1,3 @@
-"""Orchestrate a camera-assisted physical rover mission with Apache Airflow.
-
-The DAG checks the Mac-hosted USB bridge, moves the rover forward in discrete
-steps, and stops when its ultrasonic sensor reports an obstacle at or inside
-the configured safety distance. It then captures a USB-camera photograph,
-asks a local Gemma vision model for a structured assessment, and pauses at an
-Airflow HITL branch so a human flight director chooses the physical response.
-
-The exploration task records every successful outbound movement in the named
-``outbound_steps`` XCom. Return branches use that value to retrace the journey
-in reverse; the value is an open-loop motor-pulse count, not wheel odometry or
-a measurement in centimetres.
-
-The USB rover and camera remain attached to the Mac. Airflow containers reach
-the bridge through ``ROBOT_BRIDGE_URL`` and read captured JPEGs through the
-read-only ``ROVER_CAPTURE_MOUNT_PATH`` Docker volume.
-"""
-
 from datetime import datetime
 import json
 import os
@@ -37,7 +19,7 @@ from airflow.providers.standard.operators.python import PythonOperator
 ROBOT_BRIDGE_URL = os.getenv(
     "ROBOT_BRIDGE_URL", "http://host.docker.internal:8765"
 ).rstrip("/")
-OBSTACLE_DISTANCE_CM = int(os.getenv("ROVER_OBSTACLE_DISTANCE_CM", "5"))
+OBSTACLE_DISTANCE_CM = int(os.getenv("ROVER_OBSTACLE_DISTANCE_CM", "10"))
 MAX_FORWARD_STEPS = int(os.getenv("ROVER_MAX_FORWARD_STEPS", "50"))
 TURN_STEPS = int(os.getenv("ROVER_TURN_STEPS", "4"))
 ROVER_VISION_MODEL = os.getenv("ROVER_VISION_MODEL", "gemma3:4b")
@@ -130,12 +112,13 @@ class ObjectPrediction(BaseModel):
 
     predicted_object: str = Field(
         description=(
-            "Most likely visible obstacle or scene object, such as toy car, small "
-            "vehicle, box, cable, electronics, furniture, wall, or unknown obstruction"
+            "Most likely visible obstacle or scene object, especially an alien toy "
+            "figure, or another toy, vehicle, box, cable, furniture, wall, or unknown obstruction"
         )
     )
     confidence_percent: int = Field(ge=0, le=100)
-    evidence: str = Field(description="Short explanation grounded in the image and readings")
+    evidence: str = Field(
+        description="Short explanation grounded in the image and readings")
     recommended_action: str = Field(
         description="One of turn left, turn right, move backward, return to base, or abort"
     )
@@ -161,9 +144,11 @@ def bridge_request(path, method="GET", timeout=15):
             return json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         detail = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"Rover bridge failed ({error.code}): {detail}") from error
+        raise RuntimeError(
+            f"Rover bridge failed ({error.code}): {detail}") from error
     except URLError as error:
-        raise RuntimeError(f"Rover bridge is offline at {ROBOT_BRIDGE_URL}") from error
+        raise RuntimeError(
+            f"Rover bridge is offline at {ROBOT_BRIDGE_URL}") from error
 
 
 def capture_object_photo(detection):
@@ -218,8 +203,11 @@ def predict_detected_object(capture_context):
         "You are a cautious planetary-rover navigation analyst inspecting an indoor "
         "demo scene, not real terrain. Focus on the nearest primary obstruction in "
         "the rover's path, especially the lower-center and foreground area of the "
-        "image. The object may be a toy car, small vehicle, box, cable, electronics, "
-        "furniture, wall, or another tabletop/desk object. Use 'unknown obstruction' "
+        "image. Candidate objects include an alien toy figure, toy car, small vehicle, "
+        "box, cable, furniture, wall, or another tabletop object. Identify an alien "
+        "toy figure only when its visible shape and features support that label; do not "
+        "infer it merely because it appears in this candidate list. Report the most "
+        "specific category justified by the image. Use 'unknown obstruction' "
         "only when no individual object is visually distinguishable. If the image is "
         "ambiguous but a broad category is visible, choose that broad category and "
         f"explain the uncertainty. The ultrasonic sensor reports an obstacle at "
@@ -246,7 +234,8 @@ def move_in_chunks(direction, steps):
     while remaining > 0:
         chunk = min(remaining, 20)
         responses.append(
-            bridge_request(f"/move/{direction}?steps={chunk}", method="POST", timeout=30)
+            bridge_request(
+                f"/move/{direction}?steps={chunk}", method="POST", timeout=30)
         )
         remaining -= chunk
         if remaining:
@@ -315,13 +304,15 @@ def explore_until_obstacle(**context):
         if distance <= 0:
             invalid_readings += 1
             if invalid_readings >= 3:
-                raise RuntimeError("Ultrasonic sensor returned three invalid readings")
+                raise RuntimeError(
+                    "Ultrasonic sensor returned three invalid readings")
             time.sleep(0.3)
             continue
 
         invalid_readings = 0
         if distance <= OBSTACLE_DISTANCE_CM:
-            print(f"Object detected at {distance} cm after {step} forward steps")
+            print(
+                f"Object detected at {distance} cm after {step} forward steps")
             return {
                 "object_found": True,
                 "distance_cm": distance,
@@ -331,7 +322,7 @@ def explore_until_obstacle(**context):
 
         if step == MAX_FORWARD_STEPS:
             break
-        bridge_request("/move/forward?steps=1", method="POST")
+        bridge_request("/move/forward?steps=3", method="POST")
         ti.xcom_push(key="outbound_steps", value=step + 1)
         # Let motor vibration/electrical noise settle before the next ultrasonic ping.
         time.sleep(0.6)
@@ -400,9 +391,11 @@ def return_to_base_now(**context):
     """
     ti = context["ti"]
     outbound_steps = int(
-        ti.xcom_pull(task_ids="explore_until_object", key="outbound_steps") or 0
+        ti.xcom_pull(task_ids="explore_until_object",
+                     key="outbound_steps") or 0
     )
-    print(f"AI/HITL selected return to base: reversing {outbound_steps} outbound steps")
+    print(
+        f"AI/HITL selected return to base: reversing {outbound_steps} outbound steps")
     if outbound_steps:
         move_in_chunks("backward", outbound_steps)
     return {
@@ -446,7 +439,8 @@ def return_to_base(**context):
         or detection["forward_steps"]
     )
     action = ti.xcom_pull(task_ids=decision) or {}
-    print(f"Return-to-base sequence after {decision}; outbound={outbound_steps} steps")
+    print(
+        f"Return-to-base sequence after {decision}; outbound={outbound_steps} steps")
 
     if decision in {"turn_left_then_move_five", "turn_right_then_move_five"}:
         # Back out of the five-step diversion, then restore the original heading.
@@ -519,9 +513,11 @@ with DAG(
     catchup=False,
     max_active_runs=1,
     doc_md=DAG_DOC_MD,
-    tags=["astro", "physical-rover", "ultrasonic", "usb-camera", "vision-ai", "rocket:courier"],
+    tags=["astro", "physical-rover", "ultrasonic",
+          "usb-camera", "vision-ai", "human-in-the-loop"],
 ) as dag:
-    check = PythonOperator(task_id="systems_check", python_callable=systems_check)
+    check = PythonOperator(task_id="systems_check",
+                           python_callable=systems_check)
     explore = PythonOperator(
         task_id="explore_until_object",
         python_callable=explore_until_obstacle,
@@ -543,9 +539,9 @@ with DAG(
 
             ### Rover camera observation
 
-            ![Obstacle captured by the rover](/mission-control-api/rover-captures/{{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }})
+            ![Obstacle captured by the rover](/flight-director-api/rover-captures/{{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }})
 
-            [Open the full-size rover photograph](/mission-control-api/rover-captures/{{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }})
+            [Open the full-size rover photograph](/flight-director-api/rover-captures/{{ ti.xcom_pull(task_ids='capture_detected_object')['camera_capture']['filename'] }})
 
             ### Mission telemetry
 
@@ -631,4 +627,5 @@ with DAG(
     )
 
     check >> explore >> capture >> predict >> choose_action
-    choose_action >> [turn_left, turn_right, reverse, immediate_return, abort] >> return_base >> report
+    choose_action >> [turn_left, turn_right, reverse,
+                      immediate_return, abort] >> return_base >> report
