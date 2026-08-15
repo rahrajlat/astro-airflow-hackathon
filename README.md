@@ -5,7 +5,18 @@
 <br>
 <br>
 
-<p><strong>It stops five centimetres from an obstacle—and waits for a human to decide what happens next.</strong></p>
+<h2>This DAG doesn't move data.<br />It moves a rover.</h2>
+
+
+
+
+**An Apache Airflow 3.3 DAG that drives a physical micro:bit rover. It detects
+obstacles with ultrasound, captures a photograph, and uses local Gemma 3 Vision
+to classify what it sees, explain the visual evidence, and recommend a response.
+Airflow then pauses at a human-in-the-loop decision, where a five-inch Flight
+Director Console lets a person authorize the rover's next movement.**
+
+[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
 
 [![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.3-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -17,13 +28,6 @@
 [![micro:bit](https://img.shields.io/badge/micro%3Abit-Physical_Rover-00ED00?logo=microbit&logoColor=white)](https://microbit.org/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-D22128?logo=apache&logoColor=white)](LICENSE)
 
-
-**An Apache Airflow 3 DAG that drives a physical micro:bit rover: it senses with
-ultrasound, reads the obstacle with a local vision model, and waits for a human
-to authorize every movement. A dedicated five-inch Flight Director Console
-presents the evidence and records that decision through Airflow.**
-
-[Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
 
 <br />
 
@@ -39,18 +43,17 @@ presents the evidence and records that decision through Airflow.**
 
 ## Why space, robots, and a flight director?
 
-Because the hackathon is run by Astronomer, space is a natural theme for the
-project. It also fits the way physical automation works: a mission advances
-through ordered stages, reports telemetry, respects explicit safety boundaries,
-and pauses for a human decision when judgment matters. The rover makes the DAG
-physical, while the flight-director metaphor makes Airflow's role easy to
-understand without hiding the real tasks, evidence, decisions, or commands
-beneath the theme.
+Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space
+is a natural visual language for DAGstronaut. It also fits the system we built:
+the rover reports sensor and camera telemetry, stops at a safety boundary, and
+waits for a human flight director when judgment is required. The theme supports
+the real workflow rather than hiding it—the DAG, Gemma 3 evidence, HITL decision,
+and physical command all remain visible.
 
 ## What is DAGstronaut?
 
-DAGstronaut is a physical rover mission orchestrated end to end by Apache
-Airflow 3. Instead of moving data between systems, its DAG moves a real machine
+DAGstronaut is a physical rover workflow orchestrated end to end by Apache
+Airflow 3.3. Instead of moving data between systems, its DAG moves a real machine
 through the world—carefully, visibly, and with a human in command.
 
 The rover advances one motor pulse at a time and checks its ultrasonic sensor
@@ -200,9 +203,3 @@ recommendation, authorization, and traceability.
   the Raspberry Pi touchscreen and a normal browser during development.
 
 ---
-
-_This is the first README section. Architecture, features, the physical rover
-mission, installation, screenshots, and contributor documentation will be
-added after the project narrative is refined._
-
-Test commit from ubuntu
