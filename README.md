@@ -73,6 +73,8 @@ REST API. It never talks to the rover directly.
 
 ### 1. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
 
+<img src="media/Rover_Alien-annotated.png" alt="Airflow-orchestrated physical rover sensing an obstacle before Gemma 3 Vision analysis and human approval" width="900" />
+
 The heart of the project is the `planet_exploration_rover` DAG, which controls a
 real wheeled rover and coordinates a complete physical exploration mission.
 
