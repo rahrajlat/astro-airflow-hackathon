@@ -41,14 +41,9 @@ Director Console lets a person authorize the rover's next movement.**
 > belong to their respective owners; this project is not an official
 > Astronomer product.
 
-## Why space, robots, and a flight director?
+## Why Space Theme?
 
-Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space
-is a natural visual language for DAGstronaut. It also fits the system we built:
-the rover reports sensor and camera telemetry, stops at a safety boundary, and
-waits for a human flight director when judgment is required. The theme supports
-the real workflow rather than hiding it—the DAG, Gemma 3 evidence, HITL decision,
-and physical command all remain visible.
+Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space felt like a natural theme. That inspired me to build DAGstronaut: a physical rover whose exploration, AI-assisted obstacle analysis, and human-authorized movements are orchestrated by Apache Airflow.
 
 ## What is DAGstronaut?
 
