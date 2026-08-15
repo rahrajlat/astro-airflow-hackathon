@@ -45,6 +45,8 @@ Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space 
 
 ## What is DAGstronaut?
 
+<img src="media/Dagstronaut.png" alt="DAGstronaut physical rover orchestrated by Apache Airflow" width="900" />
+
 DAGstronaut is a physical rover workflow orchestrated end to end by Apache
 Airflow 3.3. Instead of moving data between systems, its DAG moves a real machine
 through the world—carefully, visibly, and with a human in command.
@@ -70,8 +72,6 @@ REST API. It never talks to the rover directly.
 > **The rover explores. AI advises. A human commands. Airflow brings it home.**
 
 ### 1. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
-
-<img src="media/dagstronaut-mission-loop-v3.gif" alt="DAGstronaut rover mission: move, detect an obstacle, AI image review, human approval, and return to base" width="900" />
 
 The heart of the project is the `planet_exploration_rover` DAG, which controls a
 real wheeled rover and coordinates a complete physical exploration mission.
