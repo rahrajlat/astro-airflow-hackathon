@@ -20,8 +20,8 @@
 
 **An Apache Airflow 3 DAG that drives a physical micro:bit rover: it senses with
 ultrasound, reads the obstacle with a local vision model, and waits for a human
-to authorize every movement. A companion Space Mission Control plugin flies the
-whole DAG fleet as rockets.**
+to authorize every movement. A dedicated five-inch Flight Director Console
+presents the evidence and records that decision through Airflow.**
 
 [Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
 
@@ -37,14 +37,12 @@ whole DAG fleet as rockets.**
 > belong to their respective owners; this project is not an official
 > Astronomer product.
 
-## Why space,rockets and rovers?
+## Why space, robots, and a flight director?
 
-Because this hackathon is run by [Astronomer](https://www.astronomer.io/), the
-plugin borrows space as its visual language. Rockets, mission stages, and a
-flight director's console map cleanly onto what Airflow already does: workflows
-launch, move through coordinated stages, report live state, ask for human
-guidance, and either land or need recovery. The theme is not only decoration—it
-makes orchestration status readable at a glance.
+Because physical automation needs the same discipline as spaceflight: ordered
+stages, observable telemetry, explicit safety boundaries, and a human decision
+when judgment matters. The flight-director metaphor makes Airflow's role in the
+mission understandable without hiding the real DAG, task, or command beneath it.
 
 ## What is DAGstronaut?
 
@@ -65,9 +63,10 @@ record, and branch dependencies ensure that no physical action can bypass human
 approval. After the chosen maneuver, the rover reverses its recorded steps and
 returns to base.
 
-A companion Airflow plugin turns that workflow into Space Mission Control,
-showing the live mission, AI evidence, pending human decisions, and final return
-as one coherent flight.
+A focused Airflow plugin turns a five-inch Raspberry Pi touchscreen into the
+Flight Director Console. It shows the rover image, sensor readings, and AI
+recommendation, then submits the human's selected branch through Airflow's HITL
+REST API. It never talks to the rover directly.
 
 > **The rover explores. AI advises. A human commands. Airflow brings it home.**
 
@@ -143,100 +142,52 @@ The physical build uses:
   [USB controller setup guide](mac_os_api/USB_CONTROLLER_README.md) for setup
   and usage
 
-### 2. Space Mission Control — an Airflow UI plugin
+### 2. Flight Director Console — a physical approval surface
 
-The second part is the screen the mission is flown from: an
+The second part is a dedicated approval screen mounted beside the rover. An
 [Apache Airflow 3](https://airflow.apache.org/docs/apache-airflow/stable/index.html)
-plugin that reimagines DAG monitoring as a space operations center. Each DAG is
-represented as a rocket, and its real Airflow state becomes a stage of the
-mission:
+plugin installs a React app designed for a five-inch Raspberry Pi touchscreen.
+It monitors only `planet_exploration_rover`, showing the latest run, current
+mission stage, task states, and progress. When `flight_director_decision` is
+waiting, the monitoring screen is taken over by the pending request and presents:
 
-- Scheduled and queued DAGs prepare for launch.
-- Running DAGs enter orbital transit with live mission telemetry.
-- Successful DAGs land safely and join the recovery fleet.
-- Failed DAGs appear in the Impact Zone for investigation and crash replay.
-- Paused DAGs enter Cryogenic Hold.
-- Pending HITL tasks wait at the Flight Director's Console for human input.
+- the camera evidence captured at the obstacle;
+- ultrasonic distance and outbound movement count;
+- the validated AI classification, confidence, and recommendation;
+- the exact physical effect of every available branch;
+- a separate confirmation step before the decision is sent to Airflow.
 
-The plugin combines an Airflow `react_app` with a FastAPI telemetry service to
-provide a command overview, animated state views, task constellations, failure
-replay, resource telemetry, a Rocket Test Bench, and a rotating five-inch
-mission display. It preserves native links to DAGs, runs, tasks, and logs while
-giving everyday Airflow operations an Astronomer-flavoured mission language.
+The selected command resolves the existing `HITLBranchOperator`. It does not
+call the USB rover bridge or issue motor commands itself. The rover therefore
+remains stopped until Airflow accepts the human response and resumes the DAG.
 
 **Airflow features used:**
 
-- **`AirflowPlugin`** registers the whole extension—React app, FastAPI service,
-  and static assets—through Airflow's plugin manager alone, with no fork and no
-  reverse proxy.
-- **`react_apps`** mounts the React and TypeScript Mission Control interface as
-  a native top-level page in the Airflow UI.
-- **`fastapi_apps`** mounts a plugin-owned FastAPI application under
-  `/mission-control-api` for mission telemetry, DAG details, host resources,
-  static assets, and Rocket Test Bench requests.
-- **Airflow metadata models**—`DagModel`, `DagRun`, and `TaskInstance`—provide
-  real DAG configuration, latest-run state, timing, and task-instance data.
-- **Airflow HITL metadata** (`HITLDetail` joined to `TaskInstance` on unanswered
-  responses) builds a single cross-DAG queue of every decision currently blocked
-  on a person, which is the Flight Director's Console.
-- **DAG tags** select a stable rocket class such as `rocket:heavy`,
-  `rocket:shuttle`, or `rocket:courier`, and power fleet filtering.
-- **Task dependencies and task-instance state** create the task-constellation
-  graph, progress display, mission timing, and animated failure replay.
-- **Native Airflow deep links** take operators from a rocket directly to its
-  DAG, current run, task instance, and logs.
-- **The Airflow CLI** powers Rocket Test Bench with `airflow tasks test`,
-  including logical dates and optional task parameters.
-- **Live polling** keeps the plugin synchronized with changing Airflow state
-  without introducing a separate monitoring database.
+- **`AirflowPlugin`** registers the React app, evidence endpoint, and static
+  bundle through Airflow's plugin manager.
+- **`react_apps`** mounts the console as a native Airflow page at
+  `/plugin/flight-director-console`.
+- **The stable Airflow HITL REST API** discovers the pending request and submits
+  `chosen_options` to `PATCH .../hitlDetails`; the console does not mutate the
+  metadata database itself.
+- **Airflow authentication and HITL permissions** apply to both reading and
+  resolving the request because the browser uses its authenticated Airflow
+  session.
+- **`fastapi_apps`** exposes only the built UI assets, health status, and the
+  captured rover JPEG needed as decision evidence.
+- **Polling with stale-request protection** lets the display interrupt from
+  standby while Airflow rejects an already-resolved response.
+- **Fullscreen and responsive layouts** make the same native plugin usable on
+  the Raspberry Pi touchscreen and a normal browser during development.
 
-#### Rocket Test Bench
+## Why the console matters
 
-Space Mission Control also turns Airflow's task-test capability into a visual
-rocket-testing station. An operator selects a DAG, task, and logical date in
-the plugin, optionally supplies a JSON parameters object, and ignites an
-isolated task test from the command deck.
-
-The station executes the equivalent Airflow command:
-
-```bash
-airflow tasks test <DAG_ID> <TASK_ID> <LOGICAL_DATE> \
-  --task-params '{"key":"value"}'
-```
-
-The plugin's FastAPI endpoint validates the request and runs the command in the
-Airflow API-server environment. Bench runs are serialized to prevent unbounded
-parallel subprocesses and are limited to five minutes. The station captures
-the exact command, combined task logs, execution duration, exit code, and
-truncation status, then presents the result as a clear **PASS** or **FAIL**
-engine diagnostic. Because it uses `airflow tasks test`, the task can be tested
-without creating a normal scheduled task instance or DagRun.
-
-A secondary Raspberry Pi with a five-inch display acts as the controller's
-dedicated cockpit screen. It opens the plugin's small-screen view in fullscreen
-mode and rotates every ten seconds through high-level running, successful,
-failed, queued, scheduled, paused, and HITL mission status. This gives the
-operator an always-on, glanceable view of the Airflow fleet while the main
-Mission Control interface remains available for detailed investigation. The
-Raspberry Pi is used only as a cockpit display; rover commands, USB sensor data,
-and camera capture continue to pass through the Mac-hosted bridge.
-
-## Why space, rockets, and rovers?
-
-Spaceflight is orchestration under pressure. A mission advances through
-dependent stages, streams telemetry, pauses when the flight director must make
-a decision, and ends in either a safe landing or a carefully managed recovery.
-That is already how Airflow thinks about work.
-
-The [Astronomer](https://www.astronomer.io/) connection makes space a natural
-visual language, but the theme earns its place by making workflow state easier
-to understand. Rockets turn DAG runs into visible missions. Mission Control
-turns task state and HITL requests into operational signals. The rover gives
-those signals a physical consequence: when a task succeeds, something in the
-real world moves.
-
-Together, the spacecraft, flight plan, and command center turn an abstract DAG
-into a mission anyone can follow at a glance.
+This is not a second control path. The console is a purpose-built client for an
+Airflow decision that already exists. AI cannot click it, the touchscreen cannot
+bypass it, and the rover bridge never treats it as a motor controller. A person
+reviews the evidence; Airflow records the response; only the selected downstream
+task can cause the physical action. The screen makes that safety boundary
+visible and tangible during the demo.
 
 ---
 
