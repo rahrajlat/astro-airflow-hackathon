@@ -66,6 +66,7 @@ x-airflow-common: &airflow-common
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
     AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+    AIRFLOW__API__INSTANCE_NAME: "DAGstronaut Mission Control"
     # Native Airflow 3 theme: deep-space neutrals with restrained cyan accents.
     AIRFLOW__API__THEME: >-
       {

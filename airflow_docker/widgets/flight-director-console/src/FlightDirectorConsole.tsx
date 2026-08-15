@@ -60,7 +60,7 @@ export const FlightDirectorConsole = () => {
       if (!hitlResponse.ok) throw new Error(await apiError(hitlResponse, "Unable to read approvals"));
       const latest = list<DagRun>(await runsResponse.json(), ["dag_runs", "dagRuns"])[0];
       const pending = list<HitlDetail>(await hitlResponse.json(), ["hitl_details", "hitlDetails"])
-        .find((item) => item.task_instance.task_id === HITL_TASK_ID);
+        .find((item) => item.task_instance.task_id === HITL_TASK_ID && item.task_instance.dag_run_id === latest?.dag_run_id);
       let latestTasks: TaskInstance[] = [];
       if (latest) {
         const response = await fetch(`/api/v2/dags/${DAG_ID}/dagRuns/${encodeURIComponent(latest.dag_run_id)}/taskInstances?limit=100`, options);

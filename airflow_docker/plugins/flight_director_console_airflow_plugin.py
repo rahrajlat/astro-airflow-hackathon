@@ -69,7 +69,7 @@ class FlightDirectorConsoleAirflowPlugin(AirflowPlugin):
     react_apps = [
         {
             "name": "Flight Director Console",
-            "bundle_url": "/flight-director-api/assets/flight-director-console-v1.umd.cjs",
+            "bundle_url": "/flight-director-api/assets/flight-director-console-v1.umd.cjs?build=latest-run-v2",
             "destination": "nav",
             "url_route": "flight-director-console",
             "category": "browse",

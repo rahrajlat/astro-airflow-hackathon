@@ -19,7 +19,7 @@ from airflow.providers.standard.operators.python import PythonOperator
 ROBOT_BRIDGE_URL = os.getenv(
     "ROBOT_BRIDGE_URL", "http://host.docker.internal:8765"
 ).rstrip("/")
-OBSTACLE_DISTANCE_CM = int(os.getenv("ROVER_OBSTACLE_DISTANCE_CM", "5"))
+OBSTACLE_DISTANCE_CM = int(os.getenv("ROVER_OBSTACLE_DISTANCE_CM", "10"))
 MAX_FORWARD_STEPS = int(os.getenv("ROVER_MAX_FORWARD_STEPS", "50"))
 TURN_STEPS = int(os.getenv("ROVER_TURN_STEPS", "4"))
 ROVER_VISION_MODEL = os.getenv("ROVER_VISION_MODEL", "gemma3:4b")
@@ -322,7 +322,7 @@ def explore_until_obstacle(**context):
 
         if step == MAX_FORWARD_STEPS:
             break
-        bridge_request("/move/forward?steps=1", method="POST")
+        bridge_request("/move/forward?steps=3", method="POST")
         ti.xcom_push(key="outbound_steps", value=step + 1)
         # Let motor vibration/electrical noise settle before the next ultrasonic ping.
         time.sleep(0.6)
