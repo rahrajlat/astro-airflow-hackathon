@@ -146,6 +146,10 @@ The physical build uses:
 
 ### 2. Flight Director Console — a physical approval surface
 
+<img src="media/ControlPlugin2-annotated.png" alt="Flight Director Console monitoring the latest Airflow rover run and live task states" width="900" />
+
+<img src="media/ControlPlugin1-annotated.png" alt="Flight Director Console presenting rover camera evidence, Gemma 3 assessment, and human-authorized actions" width="900" />
+
 The second part is a dedicated approval screen mounted beside the rover and a
 reference implementation for human-supervised IoT operations. An
 [Apache Airflow 3](https://airflow.apache.org/docs/apache-airflow/stable/index.html)
