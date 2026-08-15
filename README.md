@@ -39,10 +39,13 @@ presents the evidence and records that decision through Airflow.**
 
 ## Why space, robots, and a flight director?
 
-Because physical automation needs the same discipline as spaceflight: ordered
-stages, observable telemetry, explicit safety boundaries, and a human decision
-when judgment matters. The flight-director metaphor makes Airflow's role in the
-mission understandable without hiding the real DAG, task, or command beneath it.
+Because the hackathon is run by Astronomer, space is a natural theme for the
+project. It also fits the way physical automation works: a mission advances
+through ordered stages, reports telemetry, respects explicit safety boundaries,
+and pauses for a human decision when judgment matters. The rover makes the DAG
+physical, while the flight-director metaphor makes Airflow's role easy to
+understand without hiding the real tasks, evidence, decisions, or commands
+beneath the theme.
 
 ## What is DAGstronaut?
 
@@ -130,7 +133,8 @@ The physical build uses:
 - A [BBC micro:bit board](https://www.keyestudio.com/collections/microbit-board)
   running the rover's [MicroPython firmware](microbit_firmware/README.md)
 - A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415)
-  as the mobile rover platform
+  repurposed as the mobile rover platform with custom firmware developed for
+  this hackathon
 - A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
   for obstacle-distance telemetry
 - A computer USB camera, read through OpenCV, that captures a forward-facing
@@ -144,22 +148,37 @@ The physical build uses:
 
 ### 2. Flight Director Console — a physical approval surface
 
-The second part is a dedicated approval screen mounted beside the rover. An
+The second part is a dedicated approval screen mounted beside the rover and a
+reference implementation for human-supervised IoT operations. An
 [Apache Airflow 3](https://airflow.apache.org/docs/apache-airflow/stable/index.html)
 plugin installs a React app designed for a five-inch Raspberry Pi touchscreen.
-It monitors only `planet_exploration_rover`, showing the latest run, current
-mission stage, task states, and progress. When `flight_director_decision` is
-waiting, the monitoring screen is taken over by the pending request and presents:
+For this project it deliberately monitors only `planet_exploration_rover`,
+showing its current run and task states. When `flight_director_decision` is
+waiting, the display becomes an approval surface and presents:
 
 - the camera evidence captured at the obstacle;
-- ultrasonic distance and outbound movement count;
-- the validated AI classification, confidence, and recommendation;
-- the exact physical effect of every available branch;
-- a separate confirmation step before the decision is sent to Airflow.
+- ultrasonic distance from the rover;
+- the validated AI classification, confidence, visual evidence, and
+  recommendation;
+- the movement branches that the DAG permits the human to authorize.
 
 The selected command resolves the existing `HITLBranchOperator`. It does not
 call the USB rover bridge or issue motor commands itself. The rover therefore
 remains stopped until Airflow accepts the human response and resumes the DAG.
+
+That separation is the useful pattern demonstrated by DAGstronaut. The edge
+bridge owns immediate hardware communication and local safety; Airflow owns the
+durable sequence, AI analysis, human decision, and audit trail. The console is
+only a contextual client for a pending Airflow decision—not a second route to
+the device.
+
+Although the rover makes the pattern visible, the same architecture can
+supervise other non-real-time IoT workflows: an agricultural system reviewing a
+crop image before treatment, a warehouse robot requesting a route decision, a
+laboratory instrument waiting before its next operation, or facilities equipment
+requiring approval before a physical change. In each case, device-specific
+real-time control stays at the edge while Airflow coordinates evidence,
+recommendation, authorization, and traceability.
 
 **Airflow features used:**
 
@@ -179,15 +198,6 @@ remains stopped until Airflow accepts the human response and resumes the DAG.
   standby while Airflow rejects an already-resolved response.
 - **Fullscreen and responsive layouts** make the same native plugin usable on
   the Raspberry Pi touchscreen and a normal browser during development.
-
-## Why the console matters
-
-This is not a second control path. The console is a purpose-built client for an
-Airflow decision that already exists. AI cannot click it, the touchscreen cannot
-bypass it, and the rover bridge never treats it as a motor controller. A person
-reviews the evidence; Airflow records the response; only the selected downstream
-task can cause the physical action. The screen makes that safety boundary
-visible and tangible during the demo.
 
 ---
 
