@@ -359,6 +359,19 @@ opportunity is to use Airflow as the orchestration layer above it: connecting
 sensors, software, AI, and people into one understandable and accountable
 workflow.
 
+## About me
+
+I'm [Rahul Rajasekharan](https://www.rahulrajasekharan.dev/), a Senior Data
+Engineer based in London. I work across the modern data stack, including Apache
+Airflow, dbt, PySpark, AWS, Python, and generative AI. I enjoy automating
+repetitive work, improving the developer experience, and exploring unusual but
+useful ways to turn software, data, AI, and—as DAGstronaut demonstrates—physical
+hardware into clean, observable systems.
+
+You can find more of my work and experience on
+[rahulrajasekharan.dev](https://www.rahulrajasekharan.dev/) or connect with me
+on [LinkedIn](https://www.linkedin.com/in/rahul-rajasekharan-012506121/).
+
 ## License
 
 DAGstronaut is available under the [Apache License 2.0](LICENSE).
