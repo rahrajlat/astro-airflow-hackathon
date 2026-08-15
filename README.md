@@ -229,11 +229,11 @@ recommendation, authorization, and traceability.
 
 ## Demo video
 
-> **Demo video coming soon.** The walkthrough will show the rover mission from
-> DAG trigger to ultrasonic detection, Gemma 3 visual assessment, physical HITL
-> approval on the Flight Director Console, and the rover's return to base.
+[▶ Watch the DAGstronaut demo](media/DAGstronaut-demo.mp4)
 
-<!-- Replace the placeholder above with the final demo-video thumbnail and link. -->
+The 51-second walkthrough introduces DAGstronaut, pairs the physical rover with
+its live Airflow task state, presents the Gemma 3 assessment and HITL approval,
+and finishes on the Raspberry Pi Flight Director Console.
 
 ## Beyond the data pipeline
 
