@@ -39,6 +39,16 @@ Director Console lets a person authorize the rover's next movement.**
 > belong to their respective owners; this project is not an official
 > Astronomer product.
 
+## Submission at a glance
+
+- **Category:** **Airflow Can Do That?!** — the wildcard track explicitly
+  invites hardware projects that use Airflow as the engine. DAGstronaut also
+  exercises the plugin, Common AI provider, and HITL capabilities highlighted
+  by the other tracks, but is submitted in this single category.
+- **Demo:** [watch the 51-second DAGstronaut demo](media/DAGstronaut-demo.mp4)
+- **Airflow version:** Apache Airflow 3.3.0
+- **License:** [Apache License 2.0](LICENSE)
+
 ## Why Space Theme?
 
 Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space felt like a natural theme. That inspired me to build DAGstronaut: a physical rover whose exploration, AI-assisted obstacle analysis, and human-authorized movements are orchestrated by Apache Airflow.
@@ -227,13 +237,106 @@ recommendation, authorization, and traceability.
 - **Fullscreen and responsive layouts** make the same native plugin usable on
   the Raspberry Pi touchscreen and a normal browser during development.
 
-## Demo video
+## What was hard
 
-[▶ Watch the DAGstronaut demo](media/DAGstronaut-demo.mp4)
+- **Writing the micro:bit firmware.** I did not have much prior experience with
+  embedded development or MicroPython, so building the firmware was one of the
+  steepest learning curves. I had to learn how to drive the motors over I2C,
+  read the ultrasonic sensor, animate the OLED eyes, parse serial commands, and
+  guarantee that the rover stopped safely after every action.
+- **Bridging containers to physical hardware.** Airflow runs in Docker, while
+  the micro:bit and camera belong to the macOS host. Designing the FastAPI
+  bridge and serial protocol required a reliable boundary between those two
+  environments, including locking so concurrent tasks cannot send conflicting
+  rover commands.
+- **Recording a physical and digital workflow together.** The rover, browser,
+  and Raspberry Pi display were recorded separately, which made it challenging
+  to tell one coherent story. I used Codex and FFmpeg to inspect the clips,
+  synchronize the rover movement with the live Airflow task state, create the
+  transitions, and assemble the final demo video.
 
-The 51-second walkthrough introduces DAGstronaut, pairs the physical rover with
-its live Airflow task state, presents the Gemma 3 assessment and HITL approval,
-and finishes on the Raspberry Pi Flight Director Console.
+## Run it locally
+
+### Prerequisites
+
+- Docker with Docker Compose
+- Python 3.10 or later
+- Node.js 22 or later and `pnpm`
+- [Ollama](https://ollama.com/) with the `gemma3:4b` model
+- A Keyestudio KS4036 rover with a micro:bit V2, ultrasonic sensor, and USB data
+  cable
+- A USB camera; the Raspberry Pi touchscreen is optional for running the DAG
+
+### 1. Install the host bridge and local model
+
+From the repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+ollama pull gemma3:4b
+```
+
+Flash [`microbit_firmware/main.py`](microbit_firmware/main.py) to the micro:bit
+using the [micro:bit Python Editor](https://python.microbit.org/). The
+[firmware guide](microbit_firmware/README.md) documents the serial protocol,
+wiring, movement model, and safety behavior.
+
+### 2. Build the Flight Director Console
+
+```bash
+cd airflow_docker/widgets/flight-director-console
+pnpm install
+pnpm typecheck
+pnpm build
+cd ../../..
+```
+
+### 3. Start the USB and camera bridge
+
+Connect and power the rover, then run this in its own terminal:
+
+```bash
+source .venv/bin/activate
+python3 mac_os_api/usb_bridge.py
+```
+
+Verify the bridge before starting a mission:
+
+```bash
+curl http://127.0.0.1:8765/health
+curl http://127.0.0.1:8765/distance
+curl http://127.0.0.1:8765/camera/status
+```
+
+If the wrong camera is selected, set `USB_CAMERA_INDEX` as described in the
+[USB controller and bridge guide](mac_os_api/USB_CONTROLLER_README.md).
+
+### 4. Start Airflow 3.3
+
+```bash
+cd airflow_docker
+docker compose up --build -d
+```
+
+Open <http://localhost:8080>, sign in with `airflow` / `airflow`, enable
+`planet_exploration_rover`, and trigger a run. Open the companion app at
+<http://localhost:8080/plugin/flight-director-console>. Airflow pauses at
+`flight_director_decision` until an authenticated user selects one of the
+permitted actions.
+
+To stop the local deployment without deleting its database volume:
+
+```bash
+docker compose down
+```
+
+The default Compose configuration reaches the host bridge and Ollama through
+`host.docker.internal`. See `ROBOT_BRIDGE_URL`, `OLLAMA_BASE_URL`,
+`ROVER_VISION_MODEL`, and `ROVER_CAPTURE_DIR` in
+[`docker-compose.yaml`](airflow_docker/docker-compose.yaml) when adapting the
+setup to another host.
 
 ## Beyond the data pipeline
 
@@ -255,5 +358,9 @@ device. Those responsibilities remain at the edge, close to the hardware. The
 opportunity is to use Airflow as the orchestration layer above it: connecting
 sensors, software, AI, and people into one understandable and accountable
 workflow.
+
+## License
+
+DAGstronaut is available under the [Apache License 2.0](LICENSE).
 
 ---
