@@ -66,6 +66,47 @@ x-airflow-common: &airflow-common
     # The following line can be used to set a custom config file, stored in the local config folder
     AIRFLOW_CONFIG: "/opt/airflow/config/airflow.cfg"
     AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth
+    # Native Airflow 3 theme: deep-space neutrals with restrained cyan accents.
+    AIRFLOW__API__THEME: >-
+      {
+        "tokens": {
+          "colors": {
+            "brand": {
+              "50":  {"value": "oklch(0.97 0.018 220)"},
+              "100": {"value": "oklch(0.93 0.038 220)"},
+              "200": {"value": "oklch(0.87 0.070 220)"},
+              "300": {"value": "oklch(0.80 0.105 220)"},
+              "400": {"value": "oklch(0.73 0.135 220)"},
+              "500": {"value": "oklch(0.66 0.155 225)"},
+              "600": {"value": "oklch(0.57 0.145 230)"},
+              "700": {"value": "oklch(0.48 0.120 235)"},
+              "800": {"value": "oklch(0.39 0.090 240)"},
+              "900": {"value": "oklch(0.30 0.060 245)"},
+              "950": {"value": "oklch(0.20 0.035 250)"}
+            },
+            "gray": {
+              "50":  {"value": "oklch(0.97 0.006 255)"},
+              "100": {"value": "oklch(0.93 0.008 255)"},
+              "200": {"value": "oklch(0.86 0.012 255)"},
+              "300": {"value": "oklch(0.76 0.016 255)"},
+              "400": {"value": "oklch(0.64 0.020 255)"},
+              "500": {"value": "oklch(0.52 0.023 255)"},
+              "600": {"value": "oklch(0.42 0.025 255)"},
+              "700": {"value": "oklch(0.34 0.026 255)"},
+              "800": {"value": "oklch(0.26 0.025 255)"},
+              "900": {"value": "oklch(0.20 0.023 255)"},
+              "950": {"value": "oklch(0.15 0.020 255)"}
+            },
+            "black": {"value": "oklch(0.13 0.025 255)"},
+            "white": {"value": "oklch(0.98 0.004 255)"}
+          }
+        },
+        "globalCss": {
+          "::selection": {
+            "background": "oklch(0.66 0.155 225 / 0.35)"
+          }
+        }
+      }
     # HTTP API hosted by the Mac connected to the rover and camera over USB.
     ROBOT_BRIDGE_URL: ${ROBOT_BRIDGE_URL:-http://host.docker.internal:8765}
     OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
