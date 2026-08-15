@@ -126,25 +126,51 @@ can reverse the same number of steps and return to base.
   at `/opt/airflow/rover_captures`, keeping the camera on the Mac while the DAG
   task reads the evidence.
 
-The physical build uses:
+#### Hardware components used
 
-- A [BBC micro:bit board](https://www.keyestudio.com/collections/microbit-board)
-  running the rover's [MicroPython firmware](microbit_firmware/README.md)
-- A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415)
-  repurposed as the mobile rover platform with custom firmware developed for
-  this hackathon
+- A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415),
+  repurposed as the rover platform for this hackathon rather than used with its
+  stock behavior
+- A [BBC micro:bit V2](https://microbit.org/new-microbit/) running
+  [custom MicroPython firmware](microbit_firmware/main.py) written for the
+  project
 - A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
-  for obstacle-distance telemetry
+  added to provide obstacle-distance telemetry before every movement
+- A [128×64 I2C OLED display](https://www.amazon.co.uk/dp/B0FKLXL3DY), added as
+  the rover's face. The firmware detects it automatically and animates blinking
+  eyes while the rover is idle, with different expressions during behaviors
 - A computer USB camera, read through OpenCV, that captures a forward-facing
-  JPEG only once the ultrasonic sensor reaches the safety boundary
-- Gemma 3 Vision on local Ollama, which keeps every frame and every inference on
-  the same machine as the rover—no image leaves the host
-- A USB connection to the [Mac USB bridge](mac_os_api/usb_bridge.py) that exposes
-  rover movement, sensor, and camera operations to Airflow; see the
-  [USB controller setup guide](mac_os_api/USB_CONTROLLER_README.md) for setup
-  and usage
+  JPEG when the ultrasonic sensor reaches the configured safety boundary
+- A Mac connected to the micro:bit by USB, running the local hardware bridge
+  that makes the rover reachable from the containerized Airflow deployment
+- A Raspberry Pi with a five-inch touchscreen running the Flight Director
+  Console as the physical HITL approval surface
+
+The custom micro:bit firmware is the rover's hardware-facing control layer. It
+accepts newline-delimited commands at `115200` baud, validates each request,
+drives the motors using short, bounded pulses, reads the ultrasonic sensor, and
+updates the micro:bit LED matrix and OLED face. Every command finishes with an
+`OK` or `ERR` response, giving an Airflow task a definite result instead of
+merely assuming that a physical action happened. The implementation and
+flashing instructions are documented in the
+[micro:bit firmware guide](microbit_firmware/README.md).
+
+The code in [`mac_os_api`](mac_os_api/) connects that firmware to Airflow.
+[`usb_controller.py`](mac_os_api/usb_controller.py) discovers the micro:bit and
+translates host commands into the USB serial protocol, while
+[`usb_bridge.py`](mac_os_api/usb_bridge.py) wraps movement, distance sensing,
+and camera capture in a lock-protected FastAPI service. Airflow reaches this
+service from Docker through `host.docker.internal`, but only the firmware talks
+directly to the rover hardware. See the
+[USB controller and bridge guide](mac_os_api/USB_CONTROLLER_README.md) for the
+complete command reference and setup.
+
+Gemma 3 Vision runs locally through Ollama on the same host, so the captured
+camera frame and inference remain local to the rover setup.
 
 ### 2. Flight Director Console — a physical approval surface
+
+<img src="media/FlightDirectorConsole-hardware.png" alt="Raspberry Pi five-inch touchscreen serving as a physical Airflow HITL approval console for the rover" width="900" />
 
 <img src="media/ControlPlugin2-annotated.png" alt="Flight Director Console monitoring the latest Airflow rover run and live task states" width="900" />
 
@@ -200,5 +226,34 @@ recommendation, authorization, and traceability.
   standby while Airflow rejects an already-resolved response.
 - **Fullscreen and responsive layouts** make the same native plugin usable on
   the Raspberry Pi touchscreen and a normal browser during development.
+
+## Demo video
+
+> **Demo video coming soon.** The walkthrough will show the rover mission from
+> DAG trigger to ultrasonic detection, Gemma 3 visual assessment, physical HITL
+> approval on the Flight Director Console, and the rover's return to base.
+
+<!-- Replace the placeholder above with the final demo-video thumbnail and link. -->
+
+## Beyond the data pipeline
+
+For me, DAGstronaut is an exploration of a broader idea: Airflow can orchestrate
+more than data pipelines. If a process can be expressed as observable steps,
+dependencies, retries, decisions, and outcomes, it can potentially be modelled
+as a workflow—even when some of those steps happen in the physical world.
+
+That could mean coordinating sensor readings across an IoT deployment,
+reviewing crop and soil telemetry before an agricultural treatment, scheduling
+inspection and maintenance for remote equipment, asking a warehouse operator
+to approve a robot's next task, or pausing a laboratory process until its
+measurements have been reviewed. Airflow can provide the durable history,
+failure handling, AI-assisted analysis, human approval, and audit trail around
+those operations.
+
+Airflow should not replace the real-time controller or safety logic on a
+device. Those responsibilities remain at the edge, close to the hardware. The
+opportunity is to use Airflow as the orchestration layer above it: connecting
+sensors, software, AI, and people into one understandable and accountable
+workflow.
 
 ---
