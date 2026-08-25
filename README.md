@@ -3,14 +3,16 @@
 
 <div><img src="media/dagstronaut-logo.png" alt="DAGstronaut logo" width="100" align="center" /> <big><big><big><strong>DAGstronaut</strong></big></big></big></div>
 
-<h2>This DAG doesn't move data.<br />It moves a rover.</h2>
+<h2>This DAG doesn't just move data.<br />It moves a rover — and makes it emote.</h2>
 
 
 
 
-**An Apache Airflow 3.3 DAG that drives a physical micro:bit rover. It detects
+**DAGstronaut is an Apache Airflow 3.3 project with two physical behaviors. Its
+emote DAGs turn task outcomes into happy and sad rover reactions through success
+and failure callbacks. Its exploration DAG drives a micro:bit rover that detects
 obstacles with ultrasound, captures a photograph, and uses local Gemma 3 Vision
-to classify what it sees, explain the visual evidence, and recommend a response.
+to classify what it sees, explain the evidence, and recommend a response.
 Airflow then pauses at a human-in-the-loop decision, where a five-inch Flight
 Director Console lets a person authorize the rover's next movement.**
 
@@ -39,15 +41,15 @@ Director Console lets a person authorize the rover's next movement.**
 > belong to their respective owners; this project is not an official
 > Astronomer product.
 
-## Submission at a glance
+## Submission details
 
-- **Category:** **Airflow Can Do That?!** — the wildcard track explicitly
-  invites hardware projects that use Airflow as the engine. DAGstronaut also
-  exercises the plugin, Common AI provider, and HITL capabilities highlighted
-  by the other tracks, but is submitted in this single category.
-- **Demo:** [watch the 51-second DAGstronaut demo](media/DAGstronaut-demo.mp4)
-- **Airflow version:** Apache Airflow 3.3.0
-- **License:** [Apache License 2.0](LICENSE)
+| Field | Details |
+|---|---|
+| **Category** | **Airflow Can Do That?!** — physical hardware orchestrated by Airflow. |
+| **Airflow version** | Apache Airflow 3.3.0 |
+| **Features used** | AirflowPlugin, `react_apps`, `fastapi_apps`, Common AI `@task.llm`, `HITLBranchOperator`, callbacks, XCom, and branching. |
+| **Demo** | [Watch the final DAGstronaut demo](media/DAGstronaut-final-demo-ai-future-v2.mp4) |
+| **License** | [Apache License 2.0](LICENSE) |
 
 ## Why Space Theme?
 
@@ -56,6 +58,10 @@ Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space 
 ## What is DAGstronaut?
 
 <img src="media/Dagstronaut.png" alt="DAGstronaut physical rover orchestrated by Apache Airflow" width="900" />
+
+### Design overview
+
+<img src="media/dagstronaut-architecture.svg" alt="DAGstronaut architecture: Airflow orchestrates the bridge, rover, sensors, AI, human approval, and emote callbacks" width="1000" />
 
 DAGstronaut is a physical rover workflow orchestrated end to end by Apache
 Airflow 3.3. Instead of moving data between systems, its DAG moves a real machine
@@ -92,6 +98,15 @@ REST API. It never talks to the rover directly.
 | USB camera + OpenCV | Captures obstacle evidence for vision analysis. |
 | Mac USB bridge | Connects containerized Airflow to the micro:bit hardware. |
 | Raspberry Pi five-inch touchscreen | Physical Flight Director Console for HITL approval. |
+
+### Project structure
+
+The project is organized into three connected sections: **Emote DAGs** make
+workflow outcomes physical, the **Rover Mission** turns an Airflow DAG into a
+real exploration workflow, and the **Control Display** gives a human flight
+director the evidence and authority to approve the next action.
+
+<img src="media/dagstronaut-three-sections.svg" alt="DAGstronaut's three sections: emote DAGs, rover mission, and control display" width="1000" />
 
 ### 1. DAG Reactions — workflow status becomes physical emotion
 
@@ -360,20 +375,28 @@ The default Compose configuration reaches the host bridge and Ollama through
 [`docker-compose.yaml`](airflow_docker/docker-compose.yaml) when adapting the
 setup to another host.
 
-## Beyond the data pipeline
+## Beyond DAG
 
 For me, DAGstronaut is an exploration of a broader idea: Airflow can orchestrate
 more than data pipelines. If a process can be expressed as observable steps,
-dependencies, retries, decisions, and outcomes, it can potentially be modelled
-as a workflow—even when some of those steps happen in the physical world.
+dependencies, retries, decisions, and outcomes, it can become a workflow—even
+when some steps happen in the physical world.
 
-That could mean coordinating sensor readings across an IoT deployment,
-reviewing crop and soil telemetry before an agricultural treatment, scheduling
-inspection and maintenance for remote equipment, asking a warehouse operator
-to approve a robot's next task, or pausing a laboratory process until its
-measurements have been reviewed. Airflow can provide the durable history,
-failure handling, AI-assisted analysis, human approval, and audit trail around
-those operations.
+### Impact areas
+
+| Use case | Example workflow |
+|---|---|
+| **Home Guardian Rover** | Patrol rooms → check sensors → detect anomalies → alert homeowner |
+| **Vehicle Claims Assistant** | Capture car-camera footage → analyse damage → organise evidence → human review |
+| **Smart Agriculture Rover** | Process soil and weather data → select zone → capture crop images → flag plant health |
+| **Warehouse Fulfillment Rover** | Detect low inventory → plan route → collect items → deliver to packing |
+| **Lab Safety Companion** | Monitor experiment data → validate checks → detect risk → warn staff or pause equipment |
+| **Pipeline Health Companion** | Observe DAG state → react with light, sound, movement, or haptics |
+
+These examples show two patterns: companions help people feel invisible workflow
+states, while rovers let workflows take physical action. Airflow provides the
+durable history, failure handling, AI-assisted analysis, human approval, and
+audit trail around those operations.
 
 Airflow should not replace the real-time controller or safety logic on a
 device. Those responsibilities remain at the edge, close to the hardware. The
@@ -384,15 +407,30 @@ workflow.
 ## About me
 
 I'm [Rahul Rajasekharan](https://www.rahulrajasekharan.dev/), a Senior Data
-Engineer based in London. I work across the modern data stack, including Apache
-Airflow, dbt, PySpark, AWS, Python, and generative AI. I enjoy automating
-repetitive work, improving the developer experience, and exploring unusual but
-useful ways to turn software, data, AI, and—as DAGstronaut demonstrates—physical
-hardware into clean, observable systems.
+Engineer based in London, focused on building intelligent automation across
+data, AI, and developer workflows.
 
-You can find more of my work and experience on
-[rahulrajasekharan.dev](https://www.rahulrajasekharan.dev/) or connect with me
-on [LinkedIn](https://www.linkedin.com/in/rahul-rajasekharan-012506121/).
+- **Agentic AI & Automation** — Building AI agents and intelligent workflows
+  using AWS Bedrock, Strands Agents, AgentCore, tool calling, RAG, and
+  human-in-the-loop patterns.
+- **Data Engineering** — Hands-on experience with AWS, Apache Airflow, PySpark,
+  dbt, Redshift, Snowflake, and large-scale data processing.
+- **Developer Tools & AI Engineering** — Building AI-powered developer tools,
+  VS Code extensions, automated documentation, code analysis, and engineering
+  productivity solutions.
+- **Cloud & Data Platforms** — Designing production data pipelines and
+  platforms with a focus on scalability, reliability, observability, and cost
+  optimisation.
+- **Innovation** — Combining Data Engineering and Generative AI to turn
+  repetitive engineering and business processes into intelligent, automated
+  workflows.
+
+**Core:** AWS • Bedrock • Strands Agents • AgentCore • Airflow • PySpark • dbt •
+Python • GenAI • Agentic AI • Data Platforms
+
+**LinkedIn:** [rahul-rajasekharan-012506121](https://www.linkedin.com/in/rahul-rajasekharan-012506121/)
+
+**Portfolio:** [rahulrajasekharan.dev](https://www.rahulrajasekharan.dev/)
 
 ## License
 
