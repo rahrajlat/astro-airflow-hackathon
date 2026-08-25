@@ -81,7 +81,37 @@ REST API. It never talks to the rover directly.
 
 > **The rover explores. AI advises. A human commands. Airflow brings it home.**
 
-### 1. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
+### 1. DAG Reactions — workflow status becomes physical emotion
+
+The first demo makes Airflow task outcomes visible in the physical world. Two
+small, intentionally static DAGs each contain one task: a successful task calls
+the rover bridge's `/happy` endpoint through an `on_success_callback`, while an
+intentional failure calls `/sad` through an `on_failure_callback`. The same
+callback pattern can drive a desk companion, status light, wearable, or other
+physical interface.
+
+The emote DAGs are deliberately not dynamic. Their value is the clear,
+repeatable contract between workflow state and physical response:
+
+<table>
+<tr>
+<td><img src="media/dagstronaut-happy-emote.png" alt="DAGstronaut showing a happy emote after a successful DAG" width="420" /><br /><strong>Success → happy emote</strong></td>
+<td><img src="media/dagstronaut-sad-emote.png" alt="DAGstronaut showing a sad emote after a failed DAG" width="420" /><br /><strong>Failure → sad emote</strong></td>
+</tr>
+</table>
+
+- `dagstronaut_emote_success.py` runs `complete_demo_task` and celebrates only
+  after the task succeeds.
+- `dagstronaut_emote_failure.py` runs `fail_demo_task` with retries disabled and
+  signals distress when the task fails.
+- The callback talks to the bridge; it does not bypass Airflow's task state or
+  make the device a second orchestration system.
+
+This is the companion pattern: **companions help us feel DAGs**. A success,
+failure, or long-running state can become light, sound, movement, or haptics so
+operators do not have to stare at a dashboard.
+
+### 2. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
 
 <img src="media/Rover_Alien-annotated.png" alt="Airflow-orchestrated physical rover sensing an obstacle before Gemma 3 Vision analysis and human approval" width="900" />
 
@@ -178,7 +208,7 @@ complete command reference and setup.
 Gemma 3 Vision runs locally through Ollama on the same host, so the captured
 camera frame and inference remain local to the rover setup.
 
-### 2. Flight Director Console — a physical approval surface
+### 3. Flight Director Console — a physical approval surface
 
 <img src="media/FlightDirectorConsole-hardware.png" alt="Raspberry Pi five-inch touchscreen serving as a physical Airflow HITL approval console for the rover" width="900" />
 
