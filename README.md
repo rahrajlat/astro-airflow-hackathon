@@ -81,6 +81,18 @@ REST API. It never talks to the rover directly.
 
 > **The rover explores. AI advises. A human commands. Airflow brings it home.**
 
+### Hardware components used
+
+| Component | Purpose |
+|---|---|
+| [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415) | Rover platform for physical missions. |
+| [BBC micro:bit V2](https://microbit.org/new-microbit/) + [custom firmware](microbit_firmware/main.py) | Motor control, sensor reads, and rover behavior. |
+| [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly) | Obstacle-distance telemetry before movement. |
+| [128×64 I2C OLED display](https://www.amazon.co.uk/dp/B0FKLXL3DY) | Rover face with blinking eyes and behavior-specific expressions. |
+| USB camera + OpenCV | Captures obstacle evidence for vision analysis. |
+| Mac USB bridge | Connects containerized Airflow to the micro:bit hardware. |
+| Raspberry Pi five-inch touchscreen | Physical Flight Director Console for HITL approval. |
+
 ### 1. DAG Reactions — workflow status becomes physical emotion
 
 The first demo makes Airflow task outcomes visible in the physical world. Two
@@ -165,26 +177,6 @@ can reverse the same number of steps and return to base.
 - **A read-only Docker volume** exposes the captured photograph inside Airflow
   at `/opt/airflow/rover_captures`, keeping the camera on the Mac while the DAG
   task reads the evidence.
-
-#### Hardware components used
-
-- A [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415),
-  repurposed as the rover platform for this hackathon rather than used with its
-  stock behavior
-- A [BBC micro:bit V2](https://microbit.org/new-microbit/) running
-  [custom MicroPython firmware](microbit_firmware/main.py) written for the
-  project
-- A [Keyestudio CS100A ultrasonic module](https://www.keyestudio.com/products/keyestudio-quick-connectors-ultrasonic-modulecs100a-chip-black-environment-friendly)
-  added to provide obstacle-distance telemetry before every movement
-- A [128×64 I2C OLED display](https://www.amazon.co.uk/dp/B0FKLXL3DY), added as
-  the rover's face. The firmware detects it automatically and animates blinking
-  eyes while the rover is idle, with different expressions during behaviors
-- A computer USB camera, read through OpenCV, that captures a forward-facing
-  JPEG when the ultrasonic sensor reaches the configured safety boundary
-- A Mac connected to the micro:bit by USB, running the local hardware bridge
-  that makes the rover reachable from the containerized Airflow deployment
-- A Raspberry Pi with a five-inch touchscreen running the Flight Director
-  Console as the physical HITL approval surface
 
 The custom micro:bit firmware is the rover's hardware-facing control layer. It
 accepts newline-delimited commands at `115200` baud, validates each request,
