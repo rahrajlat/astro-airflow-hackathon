@@ -16,6 +16,8 @@ to classify what it sees, explain the evidence, and recommend a response.
 Airflow then pauses at a human-in-the-loop decision, where a five-inch Flight
 Director Console lets a person authorize the rover's next movement.**
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 [Beyond the DAG 2026](https://www.astronomer.io/events/beyond-the-dag-data-engineering-hackathon-2026/) · [Apache Airflow](https://airflow.apache.org/) · [Airflow Plugins](https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/plugins.html)
 
 [![Apache Airflow](https://img.shields.io/badge/Apache_Airflow-3.3-017CEE?logo=apacheairflow&logoColor=white)](https://airflow.apache.org/)
@@ -43,23 +45,31 @@ Director Console lets a person authorize the rover's next movement.**
 
 ## Submission details
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 | Field | Details |
 |---|---|
 | **Category** | **Airflow Can Do That?!** — physical hardware orchestrated by Airflow. |
 | **Airflow version** | Apache Airflow 3.3.0 |
 | **Features used** | AirflowPlugin, `react_apps`, `fastapi_apps`, Common AI `@task.llm`, `HITLBranchOperator`, callbacks, XCom, and branching. |
-| **Demo** | [Watch the final DAGstronaut demo](media/DAGstronaut-final-demo-ai-future-v2.mp4) |
+| **Demo** | [Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY) · [Download the video](media/DAGstronaut-final-demo-ai-future-v2.mp4) |
 | **License** | [Apache License 2.0](LICENSE) |
 
 ## Why Space Theme?
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space felt like a natural theme. That inspired me to build DAGstronaut: a physical rover whose exploration, AI-assisted obstacle analysis, and human-authorized movements are orchestrated by Apache Airflow.
 
 ## What is DAGstronaut?
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 <img src="media/Dagstronaut.png" alt="DAGstronaut physical rover orchestrated by Apache Airflow" width="900" />
 
 ### Design overview
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 <img src="media/dagstronaut-architecture.svg" alt="DAGstronaut architecture: Airflow orchestrates the bridge, rover, sensors, AI, human approval, and emote callbacks" width="1000" />
 
@@ -89,6 +99,8 @@ REST API. It never talks to the rover directly.
 
 ### Hardware components used
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 | Component | Purpose |
 |---|---|
 | [Keyestudio micro:bit robot car](https://www.keyestudio.com/collections/microbit-car-415) | Rover platform for physical missions. |
@@ -101,6 +113,8 @@ REST API. It never talks to the rover directly.
 
 ### Project structure
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 The project is organized into three connected sections: **Emote DAGs** make
 workflow outcomes physical, the **Rover Mission** turns an Airflow DAG into a
 real exploration workflow, and the **Control Display** gives a human flight
@@ -109,6 +123,8 @@ director the evidence and authority to approve the next action.
 <img src="media/dagstronaut-three-sections.svg" alt="DAGstronaut's three sections: emote DAGs, rover mission, and control display" width="1000" />
 
 ### 1. DAG Reactions — workflow status becomes physical emotion
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 The first demo makes Airflow task outcomes visible in the physical world. Two
 small, intentionally static DAGs each contain one task: a successful task calls
@@ -139,6 +155,8 @@ failure, or long-running state can become light, sound, movement, or haptics so
 operators do not have to stare at a dashboard.
 
 ### 2. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 <img src="media/Rover_Alien-annotated.png" alt="Airflow-orchestrated physical rover sensing an obstacle before Gemma 3 Vision analysis and human approval" width="900" />
 
@@ -217,6 +235,8 @@ camera frame and inference remain local to the rover setup.
 
 ### 3. Flight Director Console — a physical approval surface
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 <img src="media/FlightDirectorConsole-hardware.png" alt="Raspberry Pi five-inch touchscreen serving as a physical Airflow HITL approval console for the rover" width="900" />
 
 <img src="media/ControlPlugin2-annotated.png" alt="Flight Director Console monitoring the latest Airflow rover run and live task states" width="900" />
@@ -276,6 +296,8 @@ recommendation, authorization, and traceability.
 
 ## What was hard
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 - **Writing the micro:bit firmware.** I did not have much prior experience with
   embedded development or MicroPython, so building the firmware was one of the
   steepest learning curves. I had to learn how to drive the motors over I2C,
@@ -294,7 +316,11 @@ recommendation, authorization, and traceability.
 
 ## Run it locally
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 ### Prerequisites
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 - Docker with Docker Compose
 - Python 3.10 or later
@@ -305,6 +331,8 @@ recommendation, authorization, and traceability.
 - A USB camera; the Raspberry Pi touchscreen is optional for running the DAG
 
 ### 1. Install the host bridge and local model
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 From the repository root:
 
@@ -322,6 +350,8 @@ wiring, movement model, and safety behavior.
 
 ### 2. Build the Flight Director Console
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 ```bash
 cd airflow_docker/widgets/flight-director-console
 pnpm install
@@ -331,6 +361,8 @@ cd ../../..
 ```
 
 ### 3. Start the USB and camera bridge
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 Connect and power the rover, then run this in its own terminal:
 
@@ -351,6 +383,8 @@ If the wrong camera is selected, set `USB_CAMERA_INDEX` as described in the
 [USB controller and bridge guide](mac_os_api/USB_CONTROLLER_README.md).
 
 ### 4. Start Airflow 3.3
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 ```bash
 cd airflow_docker
@@ -377,12 +411,16 @@ setup to another host.
 
 ## Beyond DAG
 
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
+
 For me, DAGstronaut is an exploration of a broader idea: Airflow can orchestrate
 more than data pipelines. If a process can be expressed as observable steps,
 dependencies, retries, decisions, and outcomes, it can become a workflow—even
 when some steps happen in the physical world.
 
 ### Impact areas
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 | Use case | Example workflow |
 |---|---|
@@ -405,6 +443,8 @@ sensors, software, AI, and people into one understandable and accountable
 workflow.
 
 ## About me
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 I'm [Rahul Rajasekharan](https://www.rahulrajasekharan.dev/), a Senior Data
 Engineer based in London, focused on building intelligent automation across
@@ -433,6 +473,8 @@ Python • GenAI • Agentic AI • Data Platforms
 **Portfolio:** [rahulrajasekharan.dev](https://www.rahulrajasekharan.dev/)
 
 ## License
+
+[Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY)
 
 DAGstronaut is available under the [Apache License 2.0](LICENSE).
 
