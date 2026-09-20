@@ -277,22 +277,15 @@ recommendation, authorization, and traceability.
 
 **Airflow features used:**
 
-- **`AirflowPlugin`** registers the React app, evidence endpoint, and static
-  bundle through Airflow's plugin manager.
-- **`react_apps`** mounts the console as a native Airflow page at
-  `/plugin/flight-director-console`.
-- **The stable Airflow HITL REST API** discovers the pending request and submits
-  `chosen_options` to `PATCH .../hitlDetails`; the console does not mutate the
-  metadata database itself.
-- **Airflow authentication and HITL permissions** apply to both reading and
-  resolving the request because the browser uses its authenticated Airflow
-  session.
-- **`fastapi_apps`** exposes only the built UI assets, health status, and the
-  captured rover JPEG needed as decision evidence.
-- **Polling with stale-request protection** lets the display interrupt from
-  standby while Airflow rejects an already-resolved response.
-- **Fullscreen and responsive layouts** make the same native plugin usable on
-  the Raspberry Pi touchscreen and a normal browser during development.
+- **`AirflowPlugin`** adds the Flight Director Console to Airflow.
+- **`react_apps`** displays the console inside the Airflow UI.
+- **HITL REST API** retrieves pending decisions and submits the human's choice.
+- **Airflow authentication and permissions** control who can view and respond
+  to decisions.
+- **`fastapi_apps`** serves the console files and rover photographs.
+
+The console checks for new decisions automatically and supports fullscreen use
+on both the Raspberry Pi touchscreen and a desktop browser.
 
 ## What was hard
 
