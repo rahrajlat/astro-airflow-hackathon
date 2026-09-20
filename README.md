@@ -408,31 +408,10 @@ workflow.
 
 ## About me
 
-I'm [Rahul Rajasekharan](https://www.rahulrajasekharan.dev/), a Senior Data
-Engineer based in London, focused on building intelligent automation across
-data, AI, and developer workflows.
+I'm Rahul Rajasekharan, a Senior Data Engineer based in London, building
+data pipelines, AI agents, and developer tools with Apache Airflow and AWS.
 
-- **Agentic AI & Automation** — Building AI agents and intelligent workflows
-  using AWS Bedrock, Strands Agents, AgentCore, tool calling, RAG, and
-  human-in-the-loop patterns.
-- **Data Engineering** — Hands-on experience with AWS, Apache Airflow, PySpark,
-  dbt, Redshift, Snowflake, and large-scale data processing.
-- **Developer Tools & AI Engineering** — Building AI-powered developer tools,
-  VS Code extensions, automated documentation, code analysis, and engineering
-  productivity solutions.
-- **Cloud & Data Platforms** — Designing production data pipelines and
-  platforms with a focus on scalability, reliability, observability, and cost
-  optimisation.
-- **Innovation** — Combining Data Engineering and Generative AI to turn
-  repetitive engineering and business processes into intelligent, automated
-  workflows.
-
-**Core:** AWS • Bedrock • Strands Agents • AgentCore • Airflow • PySpark • dbt •
-Python • GenAI • Agentic AI • Data Platforms
-
-**LinkedIn:** [rahul-rajasekharan-012506121](https://www.linkedin.com/in/rahul-rajasekharan-012506121/)
-
-**Portfolio:** [rahulrajasekharan.dev](https://www.rahulrajasekharan.dev/)
+[LinkedIn](https://www.linkedin.com/in/rahul-rajasekharan-012506121/) · [Portfolio](https://www.rahulrajasekharan.dev/)
 
 ## License
 
