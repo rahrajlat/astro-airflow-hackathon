@@ -214,12 +214,11 @@ return task.
   at `/opt/airflow/rover_captures`, keeping the camera on the Mac while the DAG
   task reads the evidence.
 
-The custom micro:bit firmware is the rover's hardware-facing control layer. It
-accepts newline-delimited commands at `115200` baud, validates each request,
-drives the motors using short, bounded pulses, reads the ultrasonic sensor, and
-updates the micro:bit LED matrix and OLED face. Every command finishes with an
-`OK` or `ERR` response, giving an Airflow task a definite result instead of
-merely assuming that a physical action happened. The implementation and
+The custom micro:bit firmware controls the rover's hardware. It receives text
+commands over USB, one command per line, and checks each command before acting.
+It runs the motors in short bursts, reads the distance sensor, and updates the
+LED display and OLED face. It replies with `OK` when a command completes or
+`ERR` if something goes wrong, so Airflow can check the result. The implementation and
 flashing instructions are documented in the
 [micro:bit firmware guide](microbit_firmware/README.md).
 
