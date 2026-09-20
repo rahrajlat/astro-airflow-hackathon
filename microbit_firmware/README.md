@@ -1,15 +1,14 @@
-# Astro Mission Companion — micro:bit Firmware
+# DAGstronaut — micro:bit Firmware
 
 This directory contains the MicroPython firmware that runs on the micro:bit in
-the Keyestudio KS4036 rover. It is the hardware-facing layer of Astro Mission
-Control: it drives the motors and RGB lights, reads the ultrasonic sensor,
+the Keyestudio KS4036 rover. It is the hardware-facing layer of DAGstronaut: it drives the motors and RGB lights, reads the ultrasonic sensor,
 animates the optional OLED, and accepts commands from the Mac over USB serial.
 
 The Airflow stack does not communicate with the micro:bit directly. Commands
 follow this path:
 
 ```text
-Airflow DAG or Mission Control UI
+Airflow DAG or Astro Mission Companion manual-control plugin
              ↓ HTTP
         usb_bridge.py on the Mac
              ↓ subprocess
@@ -143,13 +142,13 @@ case. Each completed command returns one terminal line beginning with `OK` or
 Movement and emotion values are optional. Movement defaults to `1`, emotion
 intensity defaults to `3`, and `nudge` defaults to `8` seconds.
 
-Examples using the repository's Mac controller:
+Examples using the Mac controller, run from the repository root:
 
 ```bash
-python3 usb_controller.py forward 5
-python3 usb_controller.py left 2
-python3 usb_controller.py distance
-python3 usb_controller.py happy 3
+python3 mac_os_api/usb_controller.py forward 5
+python3 mac_os_api/usb_controller.py left 2
+python3 mac_os_api/usb_controller.py distance
+python3 mac_os_api/usb_controller.py happy 3
 ```
 
 ## Movement model
@@ -174,9 +173,9 @@ RIGHT_MOTOR_TRIM = -4
 ```
 
 Tune these constants cautiously if the rover consistently pulls to one side.
-The Airflow DAG stores step counts in XCom so it can issue the same number of
-backward pulses when returning to base; this is open-loop retracing rather than
-precise odometry.
+The Airflow DAG uses an XCom count to command an open-loop return. Its current
+loop-based count does not match the number of outbound motor pulses;
+neither this count nor the firmware provides precise odometry.
 
 ## Ultrasonic distance measurement
 

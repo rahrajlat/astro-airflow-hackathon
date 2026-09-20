@@ -6,7 +6,8 @@ sends newline-delimited commands to the firmware in `main.py`, and prints the
 firmware response.
 
 It can be used directly from a terminal or indirectly through `usb_bridge.py`
-for Airflow and the Astro Mission Companion UI.
+for DAGstronaut’s Airflow DAGs and the Astro Mission Companion manual-control
+plugin. The Flight Director Console submits HITL decisions to Airflow instead.
 
 ## Requirements
 
@@ -26,26 +27,27 @@ Only one process can control the serial port at a time.
 
 ## Quick start
 
-Move the rover using discrete movement steps:
+Run these examples from the repository root. Move the rover using discrete
+movement steps:
 
 ```bash
-python3 usb_controller.py forward 5
-python3 usb_controller.py backward 5
-python3 usb_controller.py left 2
-python3 usb_controller.py right 2
+python3 mac_os_api/usb_controller.py forward 5
+python3 mac_os_api/usb_controller.py backward 5
+python3 mac_os_api/usb_controller.py left 2
+python3 mac_os_api/usb_controller.py right 2
 ```
 
 Read the ultrasonic sensor:
 
 ```bash
-python3 usb_controller.py distance
+python3 mac_os_api/usb_controller.py distance
 ```
 
 Run an animated rover emotion:
 
 ```bash
-python3 usb_controller.py happy 3
-python3 usb_controller.py sad 3
+python3 mac_os_api/usb_controller.py happy 3
+python3 mac_os_api/usb_controller.py sad 3
 ```
 
 The controller automatically stops after each movement command. A movement
@@ -55,7 +57,7 @@ physical distance; wheel slip, battery level, and the surface affect travel.
 ## Command reference
 
 ```text
-python3 usb_controller.py COMMAND [VALUE] [--duration SECONDS] [--port DEVICE]
+python3 mac_os_api/usb_controller.py COMMAND [VALUE] [--duration SECONDS] [--port DEVICE]
 ```
 
 | Command | Value | Default | Purpose |
@@ -72,8 +74,8 @@ python3 usb_controller.py COMMAND [VALUE] [--duration SECONDS] [--port DEVICE]
 `--duration` adds a positive time limit understood by the rover firmware:
 
 ```bash
-python3 usb_controller.py happy 4 --duration 10
-python3 usb_controller.py forward 1 --duration 2.5
+python3 mac_os_api/usb_controller.py happy 4 --duration 10
+python3 mac_os_api/usb_controller.py forward 1 --duration 2.5
 ```
 
 ## Interactive mode
@@ -81,7 +83,7 @@ python3 usb_controller.py forward 1 --duration 2.5
 Run the script without a command:
 
 ```bash
-python3 usb_controller.py
+python3 mac_os_api/usb_controller.py
 ```
 
 Interactive mode accepts movement and sensor commands plus the firmware's
@@ -114,7 +116,7 @@ The controller normally detects a micro:bit or mbed USB device automatically.
 If detection is ambiguous, specify the device explicitly:
 
 ```bash
-python3 usb_controller.py forward 1 --port /dev/cu.usbmodem1102
+python3 mac_os_api/usb_controller.py forward 1 --port /dev/cu.usbmodem1102
 ```
 
 On macOS, list likely ports with:
@@ -129,7 +131,7 @@ ls /dev/cu.usbmodem*
 on the Mac from the repository root:
 
 ```bash
-python3 usb_bridge.py
+python3 mac_os_api/usb_bridge.py
 ```
 
 The bridge listens on port `8765`. Example requests:
@@ -154,7 +156,7 @@ permission to the terminal or Python process running the bridge:
 ```bash
 python3 -m pip install -r requirements.txt
 ollama pull gemma3:4b
-python3 usb_bridge.py
+python3 mac_os_api/usb_bridge.py
 ```
 
 Check the camera and take a test photograph:
@@ -165,7 +167,7 @@ curl -X POST http://127.0.0.1:8765/camera/capture
 open http://127.0.0.1:8765/camera/latest
 ```
 
-Camera captures are stored in `rover_captures/` and excluded from Git. Docker
+Camera captures are stored in `airflow_docker/rover_captures/` and excluded from Git. Docker
 Compose mounts that directory read-only at `/opt/airflow/rover_captures`. The
 rover DAG reads the JPEG there and sends it directly to Gemma; neither the JPEG
 nor its base64 representation is stored in Airflow XCom.
@@ -175,7 +177,7 @@ selected instead of the USB camera, stop the bridge and restart it with another
 index:
 
 ```bash
-USB_CAMERA_INDEX=1 python3 usb_bridge.py
+USB_CAMERA_INDEX=1 python3 mac_os_api/usb_bridge.py
 ```
 
 Optional settings are:
@@ -194,8 +196,8 @@ recreating Compose so the Mac bridge and Airflow share the same files.
 The `planet_exploration_rover` DAG captures a frame after ultrasonic detection,
 sends the frame and measured distance to the local Ollama vision model, and
 shows the structured assessment in the HITL decision task. The human still
-chooses the physical action, including returning to base using the outbound
-step count stored in XCom.
+chooses the physical action, including a return attempt using the outbound
+count stored in XCom.
 
 ## Serial protocol
 

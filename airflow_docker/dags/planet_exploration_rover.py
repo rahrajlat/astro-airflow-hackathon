@@ -42,10 +42,10 @@ local multimodal AI, and a human flight director in one observable workflow.
 
 ## Mission sequence
 
-1. **Systems check** — verify that the Mac-hosted rover bridge, controller,
-   ultrasonic sensor, and camera are available.
-2. **Explore** — advance one motor pulse at a time, checking the obstacle
-   distance before every movement.
+1. **Systems check** — request bridge health and exercise steering with left,
+   right, then left motor commands. Sensor and camera reads happen later.
+2. **Explore** — advance three motor pulses per batch, checking the obstacle
+   distance before each exploration batch.
 3. **Capture evidence** — stop at the safety boundary and save a JPEG from the
    forward-facing USB camera.
 4. **Analyse with Common AI** — `predict_detected_object` uses
@@ -55,20 +55,23 @@ local multimodal AI, and a human flight director in one observable workflow.
    and a recommended action.
 5. **Human decision** — an Airflow HITL branch presents the AI assessment to the
    flight director, who selects the rover's physical response.
-6. **Return and report** — the rover retraces its recorded outbound motor pulses
-   and publishes a structured mission report.
+6. **Return and report** — attempt an open-loop return using the recorded
+   outbound count and publish a structured mission report.
 
 ## Safety model
 
-- Distance is checked **before** each forward command.
+- Distance is checked before each exploration batch, not during avoidance
+  or return movements.
 - Exploration stops at `ROVER_OBSTACLE_DISTANCE_CM` or after
-  `ROVER_MAX_FORWARD_STEPS`.
+  the `ROVER_MAX_FORWARD_STEPS` loop limit.
 - AI provides decision support only; it cannot select or execute the avoidance
   branch without human approval.
-- Low-confidence or unsafe scenes should result in **return to base** or
-  **abort**.
-- `outbound_steps` is an open-loop motor-pulse count, not wheel odometry or a
-  physical distance measurement.
+- **Abort / hold** skips the immediate maneuver but still runs the shared
+  return task; it does not keep the rover stationary for the rest of the run.
+- `outbound_steps` currently records loop counts, although each successful
+  exploration command sends three motor pulses. Invalid samples advance the
+  loop too. Return commands therefore do not reliably retrace outbound travel.
+- Manual controls and emote DAGs are outside this DAG’s HITL approval gate.
 
 ## Runtime architecture
 
@@ -79,7 +82,7 @@ local multimodal AI, and a human flight director in one observable workflow.
 | Read-only capture volume | Maps host JPEGs to `/opt/airflow/rover_captures` |
 | Common AI `@task.llm` | Runs the multimodal structured prediction |
 | Ollama + Gemma 3 Vision | Provides local image understanding |
-| `HITLBranchOperator` | Gates every post-detection physical action |
+| `HITLBranchOperator` | Gates this DAG’s post-detection movement |
 
 The prediction uses `NativeOutput(ObjectPrediction)`: Gemma receives a native
 JSON schema without tool calling, and the result is validated before entering
@@ -90,8 +93,8 @@ XCom or the HITL screen.
 | Environment variable | Default | Meaning |
 |---|---:|---|
 | `ROBOT_BRIDGE_URL` | `http://host.docker.internal:8765` | Mac rover bridge |
-| `ROVER_OBSTACLE_DISTANCE_CM` | `5` | Stop distance in centimetres |
-| `ROVER_MAX_FORWARD_STEPS` | `50` | Maximum outbound motor pulses |
+| `ROVER_OBSTACLE_DISTANCE_CM` | `10` | Stop distance in centimetres |
+| `ROVER_MAX_FORWARD_STEPS` | `50` | Exploration loop limit (not a pulse count) |
 | `ROVER_TURN_STEPS` | `4` | Pulses used for an avoidance turn |
 | `ROVER_LLM_CONN_ID` | `ollama_local` | Common AI connection ID |
 | `ROVER_VISION_MODEL` | `gemma3:4b` | Local multimodal model |
@@ -268,7 +271,7 @@ def systems_check():
 
 
 def explore_until_obstacle(**context):
-    """Advance one step at a time until an ultrasonic obstacle is detected.
+    """Advance in three-pulse batches until an ultrasonic obstacle is detected.
 
     A distance reading is taken before every forward movement. Readings at or
     below ``OBSTACLE_DISTANCE_CM`` stop exploration immediately. A zero reading
@@ -277,7 +280,9 @@ def explore_until_obstacle(**context):
 
     After each successful forward command, the function updates the named
     ``outbound_steps`` XCom. Updating it incrementally preserves the best-known
-    return distance even if a later sensor request fails.
+    loop count even if a later sensor request fails. This count does not equal
+    motor pulses: each forward command sends three pulses and invalid samples
+    advance the loop without movement.
 
     Args:
         **context: Airflow runtime context containing the task instance used to
@@ -370,7 +375,7 @@ def execute_avoidance(direction):
 
 
 def abort_mission():
-    """Record a no-movement flight-director decision and keep the rover stopped."""
+    """Skip immediate avoidance; the downstream return task still moves the rover."""
     print("Flight director aborted movement; rover remains stopped")
     return {"status": "aborted", "movement": "none"}
 

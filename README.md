@@ -69,18 +69,18 @@ DAGstronaut is a physical rover workflow orchestrated end to end by Apache
 Airflow 3.3. Instead of moving data between systems, its DAG moves a real machine
 through the world—carefully, visibly, and with a human in command.
 
-The rover advances one motor pulse at a time and checks its ultrasonic sensor
-before every move. When it reaches an obstacle, it stops, captures a photograph,
-and sends the image and distance telemetry to a local vision model. The model
+During exploration, the rover advances in batches of three motor pulses and
+checks its ultrasonic sensor before each batch. When it reaches an obstacle,
+it stops, captures a photograph, and sends the image and distance telemetry to a local vision model. The model
 explains what it sees and recommends a response, but it cannot move the rover.
 An Airflow HITL task holds the mission until a human flight director reviews the
 evidence and chooses what happens next.
 
 Airflow is more than the scheduler behind the demo. The DAG defines the safety
-sequence, XCom stores the rover's outbound path, task logs preserve the mission
-record, and branch dependencies ensure that no physical action can bypass human
-approval. After the chosen maneuver, the rover reverses its recorded steps and
-returns to base.
+sequence, XCom stores an outbound count, task logs preserve the mission
+record, and branch dependencies require human approval for the exploration
+DAG’s post-detection movement. After the chosen maneuver, a return task uses
+the recorded count to attempt an open-loop return toward base.
 
 A focused Airflow plugin turns a five-inch Raspberry Pi touchscreen into the
 Flight Director Console. It shows the rover image, sensor readings, and AI
@@ -147,13 +147,13 @@ operators do not have to stare at a dashboard.
 The heart of the project is the `planet_exploration_rover` DAG, which controls a
 real wheeled rover and coordinates a complete physical exploration mission.
 
-The rover performs a motor systems check, moves forward one step at a time, and
-sends an ultrasonic distance reading back to Airflow before every movement. At
-the configured five-centimetre safety boundary, it stops and captures the
+The rover performs a motor systems check, moves forward in three-pulse batches,
+and reads the ultrasonic distance before each exploration batch. At or below
+the default ten-centimetre detection threshold, it stops and captures the
 obstacle with a computer USB camera. Gemma Vision analyses the photograph and
 sensor telemetry, then an Airflow HITL task asks a human flight director to
-approve the next action. Airflow records outbound movement in XCom so the rover
-can reverse the same number of steps and return to base.
+approve the next action. Airflow records an outbound count in XCom for the
+return task.
 
 **Airflow features used:**
 
@@ -170,9 +170,8 @@ can reverse the same number of steps and return to base.
   visual evidence, recommendation, and camera filename into the decision screen
   the human actually reads.
 - **A named `outbound_steps` XCom**, rewritten after every successful forward
-  movement, is the rover's durable mission memory. Return tasks read it to issue
-  the matching number of backward motor pulses, so a mid-mission sensor failure
-  still leaves a correct return distance recorded.
+  batch, preserves progress for the return tasks. The current implementation
+  records loop counts rather than actual motor pulses.
 - **Branch-aware trigger rules** converge the mutually exclusive movement
   branches into one shared return-to-base task with
   `none_failed_min_one_success`, which then computes the inverse of whichever
@@ -182,9 +181,9 @@ can reverse the same number of steps and return to base.
   `predict_detected_object(capture.output)`—without a manual `xcom_pull`.
 - **Task dependencies as safety interlocks.** The rover cannot explore before
   its systems check, photograph before detecting an obstacle, or move again
-  before the human decision resolves. The graph is the safety model.
-- **`max_active_runs=1`** prevents two missions from driving the same physical
-  hardware at once.
+  within the post-detection branches before the human decision resolves.
+- **`max_active_runs=1`** prevents overlapping runs of this exploration DAG.
+  It does not prevent other DAGs or manual controls from issuing commands.
 - **`doc_md`** publishes the mission sequence, safety model, runtime
   architecture, and configuration table directly into the Airflow UI, so the
   DAG documents itself where an operator is standing.
