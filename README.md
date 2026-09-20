@@ -53,6 +53,16 @@ Director Console lets a person authorize the rover's next movement.**
 | **Demo** | [Watch the DAGstronaut demo on YouTube](https://www.youtube.com/watch?v=Vfv9uj42CfY) · [Download the video](media/DAGstronaut-final-demo-ai-future-v2.mp4) |
 | **License** | [Apache License 2.0](LICENSE) |
 
+## Table of contents
+
+- [Why Space Theme?](#why-space-theme)
+- [What is DAGstronaut?](#what-is-dagstronaut)
+- [What was hard](#what-was-hard)
+- [Run it locally](#run-it-locally)
+- [Beyond DAG](#beyond-dag)
+- [About me](#about-me)
+- [License](#license)
+
 ## Why Space Theme?
 
 Because the hackathon is run by [Astronomer](https://www.astronomer.io/), space felt like a natural theme. That inspired me to build DAGstronaut: a physical rover whose exploration, AI-assisted obstacle analysis, and human-authorized movements are orchestrated by Apache Airflow.
