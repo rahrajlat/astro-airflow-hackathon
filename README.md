@@ -150,6 +150,16 @@ This is the companion pattern: **companions help us feel DAGs**. A success,
 failure, or long-running state can become light, sound, movement, or haptics so
 operators do not have to stare at a dashboard.
 
+#### What next?
+
+DAG Reactions could extend beyond the rover into desktop gadgets that emote,
+mobile companions that surface workflow updates, and smartwatch companions that
+signal important events through haptics. A failed task could trigger a concerned
+expression; a successful run, a celebration; a pending human decision, a gentle
+nudge. The aim is to make workflows easier to notice without keeping an Airflow
+dashboard open. Selective alerts for failures, recovery, and decisions needing
+attention would keep these companions useful without overwhelming their users.
+
 ### 2. Planet Exploration Rover — a hardware-orchestrating Airflow DAG
 
 <img src="media/Rover_Alien-annotated.png" alt="Airflow-orchestrated physical rover sensing an obstacle before Gemma 3 Vision analysis and human approval" width="900" />
